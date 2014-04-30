@@ -52,6 +52,8 @@ import net.sf.appia.core.QoS;
 import net.sf.appia.protocols.tcpcomplete.TcpCompleteLayer;
 import tfsd.beb.BasicBroadcastLayer;
 import tfsd.consensus.ConsensusLayer;
+import tfsd.lrb.LazyRBLayer;
+import tfsd.pfd.TcpBasedPFDLayer;
 
 /**
  * This class is the MAIN class to run the Reliable Broadcast protocols.
@@ -116,46 +118,29 @@ public class SampleAppl {
 	}
 
 	/**
-	 * Builds an Appia channel with the specified QoS
-	 * 
-	 * @param set
-	 *            the ProcessSet
-	 * @param qos
-	 *            the specified QoS
-	 * @return a new uninitialized channel
-	 */
-	private static Channel getChannel(ProcessSet set, String qos) {
-		if (qos.equals("beb")) {
-			return getBebChannel(set);
-		} else {
-			System.out.println("Other");
-			return null;
-		}
-	}
-
-	/**
 	 * Builds a new Appia Channel with Best Effort Broadcast
 	 * 
 	 * @param processes
 	 *            set of processes
 	 * @return a new uninitialized Channel
 	 */
-	private static Channel getBebChannel(ProcessSet processes) {
-		/* Create layers and put them on a array */
+	private static Channel getChannel(ProcessSet processes) {
 
-		// TODO: change to LRB like discussed in lab
+		/* Create layers and put them in an array */
 		Layer[] qos = { new TcpCompleteLayer(), new BasicBroadcastLayer(),
+				new TcpBasedPFDLayer(), new LazyRBLayer(),
 				new ConsensusLayer(), new SampleApplLayer() };
 
 		/* Create a QoS */
 		QoS myQoS = null;
 		try {
-			myQoS = new QoS("Best Effort Broadcast QoS", qos);
+			myQoS = new QoS("Lazy Reliable Broadcast QoS", qos);
 		} catch (AppiaInvalidQoSException ex) {
 			System.err.println("Invalid QoS");
 			System.err.println(ex.getMessage());
 			System.exit(1);
 		}
+
 		/* Create a channel. Uses default event scheduler. */
 		Channel channel = myQoS
 				.createUnboundChannel("Best effort Broadcast Channel");
@@ -186,7 +171,7 @@ public class SampleAppl {
 	public static void main(String[] args) {
 
 		int arg = 0, self = -1;
-		String filename = null, qos = null;
+		String filename = null;
 		try {
 			while (arg < args.length) {
 				if (args[arg].equals("-f")) {
@@ -201,15 +186,9 @@ public class SampleAppl {
 					} catch (NumberFormatException e) {
 						invalidArgs(e.getMessage());
 					}
-				} else if (args[arg].equals("-qos")) {
-					arg++;
-					qos = args[arg];
-					if (qos.equals("pb")) {
-						qos = qos + " " + args[++arg] + " " + args[++arg];
-					}
-					System.out.println("Starting with QoS: " + qos);
-				} else
+				} else {
 					invalidArgs("Unknown argument: " + args[arg]);
+				}
 				arg++;
 			}
 		} catch (ArrayIndexOutOfBoundsException e) {
@@ -222,7 +201,7 @@ public class SampleAppl {
 		 * session created. Remaining sessions are created by default. Just tell
 		 * the channel to start.
 		 */
-		Channel channel = getChannel(buildProcessSet(filename, self), qos);
+		Channel channel = getChannel(buildProcessSet(filename, self));
 		try {
 			channel.start();
 		} catch (AppiaDuplicatedSessionsException ex) {

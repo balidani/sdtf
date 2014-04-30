@@ -44,15 +44,15 @@ import net.sf.appia.core.events.SendableEvent;
  */
 public class DecideEvent extends SendableEvent {
 
-  /**
-   * Default constructor.
-   */
-  public DecideEvent() {
-    super();
-  }
-  
-  public DecideEvent(Channel c, int dir, Session s)
-  throws AppiaEventException{
-	    super(c, dir, s);
-  }
+	/**
+	 * Default constructor.
+	 */
+	public DecideEvent() {
+		super();
+	}
+
+	public DecideEvent(Channel c, int dir, Session s)
+			throws AppiaEventException {
+		super(c, dir, s);
+	}
 }

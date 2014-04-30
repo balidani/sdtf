@@ -32,12 +32,19 @@
 
 package tfsd.consensus;
 
+import java.net.SocketAddress;
+import java.util.HashMap;
+import java.util.Map;
+
 import net.sf.appia.core.AppiaEventException;
+import net.sf.appia.core.Direction;
 import net.sf.appia.core.Event;
 import net.sf.appia.core.Layer;
 import net.sf.appia.core.Session;
 import net.sf.appia.core.events.SendableEvent;
-
+import tfsd.ProcessInitEvent;
+import tfsd.ProcessSet;
+import tfsd.SampleProcess;
 
 /**
  * Session implementing the Basic Broadcast protocol.
@@ -47,70 +54,110 @@ import net.sf.appia.core.events.SendableEvent;
  */
 public class ConsensusSession extends Session {
 
-    /**
-     * Builds a new BEBSession.
-     * 
-     * @param layer
-     */
-    public ConsensusSession(Layer layer) {
-        super(layer);
-    }
+	private ProcessSet processes;
+	private Map<Integer, ProposeEvent> quorum;
+	 
+	/**
+	 * Builds a new BEBSession.
+	 * 
+	 * @param layer
+	 */
+	public ConsensusSession(Layer layer) {
+		super(layer);
 
-    /**
-     * Handles incoming events.
-     * 
-     * @see appia.Session#handle(appia.Event)
-     */
-    public void handle(Event event) {
-        // Init events. Channel Init is from Appia and ProcessInitEvent is to know
-        // the elements of the group
-        if (event instanceof ProposeEvent) {
-            handlePropose((ProposeEvent) event);
-        } else if (event instanceof SendableEvent) {
-        	handleSendable((SendableEvent) event);
-        } else {
-            try {
-				event.go();
-			} catch (AppiaEventException e) {
-				e.printStackTrace();
-			}
-        }
-    }
+		quorum = new HashMap<Integer, ProposeEvent>();
+	}
 
-	private void handleSendable(SendableEvent event) {
+	/**
+	 * Handles incoming events.
+	 * 
+	 * @see appia.Session#handle(appia.Event)
+	 */
+	public void handle(Event event) {
 		
-		String proposed = event.getMessage().popString();
-		System.out.println("Received proposed value: " + proposed);
+		try {
+			if (event instanceof ProposeEvent) {
+				handlePropose((ProposeEvent) event);
+			} else if (event instanceof SendableEvent) {
+				handleSendable((SendableEvent) event);
+			} else if (event instanceof ProcessInitEvent) {
+	            handleProcessInitEvent((ProcessInitEvent) event);
+			} else {
+				event.go();
+			}
+		} catch (AppiaEventException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void handleProcessInitEvent(ProcessInitEvent event) throws AppiaEventException {
+		
+		processes = event.getProcessSet();
+		event.go();
+	}
+
+	private void handleSendable(SendableEvent event) throws AppiaEventException {
+
+		String proposed = event.getMessage().popString().trim();
+		System.out.println("RC: Received proposed value: " + proposed);
+
+		// Convert to integer
+		int proposedInteger = Integer.parseInt(proposed);
 		
 		ProposeEvent proposal = new ProposeEvent();
-		proposal.getMessage().pushString(proposed);
+		proposal.getMessage().pushInt(proposedInteger);
 
 		proposal.setSourceSession(event.getSourceSession());
 		proposal.setChannel(event.getChannel());
 		proposal.setDir(event.getDir());
-		
-		try {
 
-			proposal.init();
-			proposal.go();
-			
-		} catch (AppiaEventException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
+		proposal.init();
+		proposal.go();
+
 	}
 
-	private void handlePropose(ProposeEvent event) {
+	private void handlePropose(ProposeEvent event) throws AppiaEventException {
 		// TODO implement this
-		System.out.println("Received a ProposeEvent, direction: " + event.getDir());
 		
-		try {
+		// When we receive the proposal, we must broadcast it
+		if (event.getDir() == Direction.DOWN) {
 			event.go();
-		} catch (AppiaEventException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			return;
 		}
+		
+		// Set the value on the proposed object, for convenience
+		event.setValue(event.getMessage().peekInt());
+		
+		// Then we must wait for a quorum
+		System.out.println("RC: Received incoming ProposeEvent");
+		
+		// Save each incoming value according to its process id 
+		SampleProcess pi = processes.getProcess((SocketAddress) event.source);
+        int processId = pi.getProcessNumber();
+        quorum.put(processId, event);
+        
+        // When we get a quorum, check if the values are identical
+        if (quorum.size() > processes.getSize() / 2) {
+        	ProposeEvent firstProposal = quorum.values().iterator().next();
+        	int firstValue = firstProposal.getValue();
+        	boolean identicalValues = true;
+        	for (ProposeEvent proposed : quorum.values()) {
+				if (proposed.getValue() != firstValue) {
+					identicalValues = false;
+					break;
+				}
+			}
+        	
+        	// If the values are identical, broadcast this v* value and enter phase 2
+        	if (identicalValues) {
+        		System.out.println("RC: A quorum was found with identical values");
+        		return;
+        	}
+        	
+        	// Otherwise broadcast a default value and enter phase 2
+    		System.out.println("RC: A quorum was found with different values");
+    		
+        }
 	}
 
 }

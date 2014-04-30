@@ -44,15 +44,25 @@ import net.sf.appia.core.events.SendableEvent;
  */
 public class ProposeEvent extends SendableEvent {
 
-  /**
-   * Default constructor.
-   */
-  public ProposeEvent() {
-    super();
-  }
-  
-  public ProposeEvent(Channel c, int dir, Session s)
-  throws AppiaEventException{
-	    super(c, dir, s);
-  }
+	private int value;
+	
+	/**
+	 * Default constructor.
+	 */
+	public ProposeEvent() {
+		super();
+	}
+
+	public ProposeEvent(Channel c, int dir, Session s)
+			throws AppiaEventException {
+		super(c, dir, s);
+	}
+
+	public int getValue() {
+		return value;
+	}
+
+	public void setValue(int value) {
+		this.value = value;
+	}
 }

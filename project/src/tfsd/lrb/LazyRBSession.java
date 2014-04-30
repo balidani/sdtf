@@ -69,6 +69,8 @@ public class LazyRBSession extends Session {
      */
     public LazyRBSession(Layer layer) {
         super(layer);
+        
+        delivered = new LinkedList<MessageID>();
     }
 
     /**

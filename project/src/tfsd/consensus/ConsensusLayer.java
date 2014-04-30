@@ -32,9 +32,11 @@
 
 package tfsd.consensus;
 
+import tfsd.ProcessInitEvent;
 import net.sf.appia.core.Layer;
 import net.sf.appia.core.Session;
 import net.sf.appia.core.events.SendableEvent;
+import net.sf.appia.core.events.channel.ChannelInit;
 
 /**
  * Layer of the Basic Broadcast protocol.
@@ -52,12 +54,16 @@ public class ConsensusLayer extends Layer {
      * events that the protocol require to work. This is a subset of the
      * accepted events
      */
-    evRequire = new Class[0];
+    evRequire = new Class[2];
+    evRequire[0] = ChannelInit.class;
+    evRequire[1] = ProcessInitEvent.class;
 
     /* events that the protocol will accept */
-    evAccept = new Class[2];
+    evAccept = new Class[4];
     evAccept[0] = ProposeEvent.class;
     evAccept[1] = SendableEvent.class;
+    evAccept[2] = ChannelInit.class;
+    evAccept[3] = ProcessInitEvent.class;
 
   }
 

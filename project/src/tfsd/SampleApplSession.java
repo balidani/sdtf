@@ -42,9 +42,7 @@ import net.sf.appia.core.Layer;
 import net.sf.appia.core.Session;
 import net.sf.appia.core.events.channel.ChannelClose;
 import net.sf.appia.core.events.channel.ChannelInit;
-import net.sf.appia.core.message.Message;
 import net.sf.appia.protocols.common.RegisterSocketEvent;
-import tfsd.consensus.ProposeEvent;
 import tfsd.pfd.PFDStartEvent;
 
 /**
@@ -156,15 +154,14 @@ public class SampleApplSession extends Session {
 	 */
 	private void handleOutgoingEvent(SampleSendableEvent event) {
 		String command = event.getCommand();
-		if ("bcast".equals(command))
-			handleBCast(event);
-		if ("propose".equals(command))
+
+		if ("propose".equals(command)) {
 			handlePropose(event);
-		else if ("startpfd".equals(command))
+		} else if ("startpfd".equals(command)) {
 			handleStartPFD(event);
-		else if ("help".equals(command))
+		} else if ("help".equals(command)) {
 			printHelp();
-		else {
+		} else {
 			System.out.println("Invalid command: " + command);
 			printHelp();
 		}
@@ -183,46 +180,25 @@ public class SampleApplSession extends Session {
 		}
 	}
 
-	/**
-	 * @param event
-	 */
-	private void handleBCast(SampleSendableEvent event) {
-		if (blocked) {
-			System.out
-					.println("The group is blocked, therefore message can not be sent.");
-			return;
-		}
+	private void handlePropose(SampleSendableEvent event) {
+		// TODO: implement
+
+		System.out.println("Sending ProposeEvent");
 
 		try {
 			event.go();
-		} catch (AppiaEventException e) {
-			e.printStackTrace();
-		}
-	}
-
-	private void handlePropose(SampleSendableEvent event) {
-		// TODO: implement
-		
-		System.out.println("Sending ProposeEvent");
-		
-        try {
-        	event.go();
 		} catch (AppiaEventException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	/**
-   * 
-   */
 	private void printHelp() {
 		System.out
 				.println("Available commands:\n"
-						+ "bcast <msg> - Broadcast the message \"msg\"\n"
+						+ "propose <value> - Proposes a value for consensus\n"
 						+ "startpfd - starts the Perfect Failure detector (when it applies)\n"
-						+ "help - Print this help information.\n"
-						+ "propose - TODO");
+						+ "help - Print this help information.");
 	}
 
 }
