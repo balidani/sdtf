@@ -43,7 +43,7 @@ import net.sf.appia.core.events.SendableEvent;
  * @author nuno
  */
 public class DecideEvent extends SendableEvent {
-
+	
 	/**
 	 * Default constructor.
 	 */

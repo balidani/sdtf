@@ -168,6 +168,8 @@ public class SampleAppl {
 		return channel;
 	}
 
+	public static int TOLERATED_FAILURES = 0;
+	
 	public static void main(String[] args) {
 
 		int arg = 0, self = -1;
@@ -183,6 +185,14 @@ public class SampleAppl {
 					try {
 						self = Integer.parseInt(args[arg]);
 						System.out.println("Process number: " + self);
+					} catch (NumberFormatException e) {
+						invalidArgs(e.getMessage());
+					}
+				} else if (args[arg].equals("-fail")) {
+					arg++;
+					try {
+						SampleAppl.TOLERATED_FAILURES = Integer.parseInt(args[arg]);
+						System.out.println("Failures tolerated: " + SampleAppl.TOLERATED_FAILURES);
 					} catch (NumberFormatException e) {
 						invalidArgs(e.getMessage());
 					}
