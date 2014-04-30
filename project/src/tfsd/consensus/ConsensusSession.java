@@ -54,9 +54,12 @@ import tfsd.SampleProcess;
  */
 public class ConsensusSession extends Session {
 
+	public static final int PHASE_1 = 1;
+	public static final int PHASE_2 = 2;
+
 	private ProcessSet processes;
 	private Map<Integer, ProposeEvent> quorum;
-	 
+
 	/**
 	 * Builds a new BEBSession.
 	 * 
@@ -74,14 +77,14 @@ public class ConsensusSession extends Session {
 	 * @see appia.Session#handle(appia.Event)
 	 */
 	public void handle(Event event) {
-		
+
 		try {
 			if (event instanceof ProposeEvent) {
 				handlePropose((ProposeEvent) event);
 			} else if (event instanceof SendableEvent) {
 				handleSendable((SendableEvent) event);
 			} else if (event instanceof ProcessInitEvent) {
-	            handleProcessInitEvent((ProcessInitEvent) event);
+				handleProcessInitEvent((ProcessInitEvent) event);
 			} else {
 				event.go();
 			}
@@ -90,8 +93,9 @@ public class ConsensusSession extends Session {
 		}
 	}
 
-	private void handleProcessInitEvent(ProcessInitEvent event) throws AppiaEventException {
-		
+	private void handleProcessInitEvent(ProcessInitEvent event)
+			throws AppiaEventException {
+
 		processes = event.getProcessSet();
 		event.go();
 	}
@@ -103,8 +107,13 @@ public class ConsensusSession extends Session {
 
 		// Convert to integer
 		int proposedInteger = Integer.parseInt(proposed);
-		
+
+		// Create a ProposeEvent
 		ProposeEvent proposal = new ProposeEvent();
+
+		// Push the phase
+		proposal.getMessage().pushInt(PHASE_1);
+		// Push the value proposed
 		proposal.getMessage().pushInt(proposedInteger);
 
 		proposal.setSourceSession(event.getSourceSession());
@@ -118,46 +127,85 @@ public class ConsensusSession extends Session {
 
 	private void handlePropose(ProposeEvent event) throws AppiaEventException {
 		// TODO implement this
-		
+
 		// When we receive the proposal, we must broadcast it
 		if (event.getDir() == Direction.DOWN) {
 			event.go();
 			return;
 		}
-		
+
 		// Set the value on the proposed object, for convenience
-		event.setValue(event.getMessage().peekInt());
-		
-		// Then we must wait for a quorum
-		System.out.println("RC: Received incoming ProposeEvent");
-		
-		// Save each incoming value according to its process id 
+		event.setValue(event.getMessage().popInt());
+		event.setPhase(event.getMessage().popInt());
+
+		// Check the phase for the Proposal
+		if (event.getPhase() == PHASE_1) {
+
+			System.out.println("RC: (PHASE 1) Received incoming ProposeEvent");
+			handleProposePhase1(event);
+		} else if (event.getPhase() == PHASE_2) {
+
+			System.out.println("RC: (PHASE 2) Received incoming ProposeEvent");
+			handleProposePhase2(event);
+		}
+	}
+
+	private void handleProposePhase1(ProposeEvent event)
+			throws AppiaEventException {
+
+		// First we must wait for a quorum
+
+		// Save each incoming value according to its process id
 		SampleProcess pi = processes.getProcess((SocketAddress) event.source);
-        int processId = pi.getProcessNumber();
-        quorum.put(processId, event);
-        
-        // When we get a quorum, check if the values are identical
-        if (quorum.size() > processes.getSize() / 2) {
-        	ProposeEvent firstProposal = quorum.values().iterator().next();
-        	int firstValue = firstProposal.getValue();
-        	boolean identicalValues = true;
-        	for (ProposeEvent proposed : quorum.values()) {
+		int processId = pi.getProcessNumber();
+		quorum.put(processId, event);
+
+		// When we get a quorum, check if the values are identical
+		if (quorum.size() > processes.getSize() / 2) {
+			ProposeEvent firstProposal = quorum.values().iterator().next();
+			int firstValue = firstProposal.getValue();
+			boolean identicalValues = true;
+			for (ProposeEvent proposed : quorum.values()) {
 				if (proposed.getValue() != firstValue) {
 					identicalValues = false;
 					break;
 				}
 			}
-        	
-        	// If the values are identical, broadcast this v* value and enter phase 2
-        	if (identicalValues) {
-        		System.out.println("RC: A quorum was found with identical values");
-        		return;
-        	}
-        	
-        	// Otherwise broadcast a default value and enter phase 2
-    		System.out.println("RC: A quorum was found with different values");
-    		
-        }
+
+			// If the values are identical, broadcast this v* value and enter
+			// phase 2
+			// Otherwise broadcast a default value and enter phase 2
+			int broadcastedValue;
+
+			if (identicalValues) {
+				System.out
+						.println("RC: A quorum was found with identical values");
+				broadcastedValue = firstValue;
+			} else {
+				System.out
+						.println("RC: A quorum was found with different values");
+
+				// TODO: add a flag instead
+				broadcastedValue = -1;
+			}
+
+			// Send the broadcast for phase 2
+			ProposeEvent proposal = new ProposeEvent();
+			proposal.getMessage().pushInt(PHASE_2);
+			proposal.getMessage().pushInt(broadcastedValue);
+
+			proposal.setSourceSession(event.getSourceSession());
+			proposal.setChannel(event.getChannel());
+			proposal.setDir(Direction.DOWN);
+
+			proposal.init();
+			proposal.go();
+		}
+	}
+
+	private void handleProposePhase2(ProposeEvent event) throws AppiaEventException {
+		
+		System.out.println("Got this far...");
 	}
 
 }

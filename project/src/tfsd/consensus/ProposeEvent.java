@@ -45,6 +45,7 @@ import net.sf.appia.core.events.SendableEvent;
 public class ProposeEvent extends SendableEvent {
 
 	private int value;
+	private int phase;
 	
 	/**
 	 * Default constructor.
@@ -64,5 +65,13 @@ public class ProposeEvent extends SendableEvent {
 
 	public void setValue(int value) {
 		this.value = value;
+	}
+
+	public int getPhase() {
+		return phase;
+	}
+
+	public void setPhase(int phase) {
+		this.phase = phase;
 	}
 }
