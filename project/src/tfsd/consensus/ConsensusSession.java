@@ -33,7 +33,9 @@
 package tfsd.consensus;
 
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -64,6 +66,7 @@ public class ConsensusSession extends Session {
 	private ProcessSet processes;
 	private Map<Integer, ProposeEvent> phaseOneQuorum;
 	private Map<Integer, ProposeEvent> phaseTwoQuorum;
+	private List<ProposeEvent> proposeQueue;
 
 	/**
 	 * Builds a new BEBSession.
@@ -75,6 +78,7 @@ public class ConsensusSession extends Session {
 
 		phaseOneQuorum = new HashMap<Integer, ProposeEvent>();
 		phaseTwoQuorum = new HashMap<Integer, ProposeEvent>();
+		proposeQueue = new ArrayList<ProposeEvent>();
 	}
 
 	/**
@@ -85,7 +89,9 @@ public class ConsensusSession extends Session {
 	public void handle(Event event) {
 
 		try {
-			if (event instanceof ProposeEvent) {
+			if (event instanceof DecideEvent) {
+				handleDecide((DecideEvent) event);
+			} else if (event instanceof ProposeEvent) {
 				handlePropose((ProposeEvent) event);
 			} else if (event instanceof SendableEvent) {
 				handleSendable((SendableEvent) event);
@@ -126,17 +132,6 @@ public class ConsensusSession extends Session {
 			event.go();
 			return;
 		}
-		
-		/*
-		 * TODO:
-		 * 
-		 * if <we haven't proposed yet>:
-		 *   queue += event
-		 *   return
-		 *
-		 * if <this is our own proposal>:
-		 *   put queue events into their respective quorums
-		 */
 
 		// Set the value on the proposed object, for convenience
 		event.setValue(event.getMessage().popInt());
@@ -206,8 +201,6 @@ public class ConsensusSession extends Session {
 		int processId = pi.getProcessNumber();
 		phaseTwoQuorum.put(processId, event);
 		
-		System.out.println("Phase 2 quorum size: " + phaseTwoQuorum.size() + "/" + (processes.getSize()));
-		
 		// When we get a quorum, check if the values are identical
 		if (phaseTwoQuorum.size() == processes.getSize() - SampleAppl.TOLERATED_FAILURES) {
 			
@@ -242,9 +235,17 @@ public class ConsensusSession extends Session {
 				// TODO: Maybe keep a set of values which is persistent between rounds
 				// (it's not emptied after each round)
 				
-				Object values[] = phaseOneQuorum.values().toArray();
-				ProposeEvent randomProposal = (ProposeEvent) values[(new Random()).nextInt() % phaseOneQuorum.size()];
-				int randomValue = randomProposal.getValue();
+				boolean foundProposal = false;
+				int randomValue = phaseOneQuorum.values().iterator().next().getValue();
+				
+				while (!foundProposal) {
+					int randomIndex = (new Random()).nextInt() % phaseOneQuorum.size();
+					if (phaseOneQuorum.containsKey(randomIndex)) {
+						ProposeEvent randomProposal = (ProposeEvent) phaseOneQuorum.get(randomIndex);
+						randomValue = randomProposal.getValue();
+						foundProposal = true;
+					}
+				}
 				
 				System.out.println("Selected random value " + randomValue);
 				
@@ -253,6 +254,10 @@ public class ConsensusSession extends Session {
 				sendProposal(this, event.getChannel(), PHASE_1, randomValue, Direction.DOWN);
 			}
 		}
+	}
+	
+	private void handleDecide(DecideEvent event) {
+		System.out.println("RC: Deciding value " + event.getMessage().peekInt());
 	}
 	
 	/*

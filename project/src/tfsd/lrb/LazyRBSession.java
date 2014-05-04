@@ -134,7 +134,7 @@ public class LazyRBSession extends Session {
         SampleProcess self = processes.getSelfProcess();
         MessageID msgID = new MessageID(self.getProcessNumber(), seqNumber);
         seqNumber++;
-        System.out.println("RB: broadcasting message.");
+        // System.out.println("RB: broadcasting message.");
         event.getMessage().pushObject(msgID);
         // broadcast the message
         bebBroadcast(event);
@@ -146,10 +146,10 @@ public class LazyRBSession extends Session {
      * @param event
      */
     private void bebDeliver(SendableEvent event) {
-        System.out.println("RB: Received message from beb.");
+        // System.out.println("RB: Received message from beb.");
         MessageID msgID = (MessageID) event.getMessage().peekObject();
         if (!delivered.contains(msgID)) {
-            System.out.println("RB: message is new.");
+            // System.out.println("RB: message is new.");
             delivered.add(msgID);
             // removes the header from the message (sender and seqNumber) and delivers
             // it
@@ -192,7 +192,7 @@ public class LazyRBSession extends Session {
      * @param event
      */
     private void bebBroadcast(SendableEvent event) {
-        System.out.println("RB: sending message to beb.");
+        // System.out.println("RB: sending message to beb.");
         try {
             event.setDir(Direction.DOWN);
             event.setSourceSession(this);
@@ -210,7 +210,7 @@ public class LazyRBSession extends Session {
      */
     private void handleCrash(Crash crash) {
         int pi = crash.getCrashedProcess();
-        System.out.println("Process " + pi + " failed.");
+        // System.out.println("Process " + pi + " failed.");
 
         try {
             crash.go();
