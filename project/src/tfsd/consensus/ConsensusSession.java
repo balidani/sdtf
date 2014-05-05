@@ -52,9 +52,7 @@ import tfsd.SampleAppl;
 import tfsd.SampleProcess;
 
 /**
- * Session implementing the Basic Broadcast protocol.
- * 
- * @author nuno
+ * Session implementing the Randomized Consensus Protocol
  * 
  */
 public class ConsensusSession extends Session {
@@ -67,6 +65,8 @@ public class ConsensusSession extends Session {
 	private Map<Integer, ProposeEvent> phaseOneQuorum;
 	private Map<Integer, ProposeEvent> phaseTwoQuorum;
 	private List<ProposeEvent> proposeQueue;
+	private int startedTimestamp;
+	private int decidedTimestamp;
 
 	/**
 	 * Builds a new BEBSession.
@@ -79,6 +79,9 @@ public class ConsensusSession extends Session {
 		phaseOneQuorum = new HashMap<Integer, ProposeEvent>();
 		phaseTwoQuorum = new HashMap<Integer, ProposeEvent>();
 		proposeQueue = new ArrayList<ProposeEvent>();
+		
+		startedTimestamp = 0;
+		decidedTimestamp = 0;
 	}
 
 	/**
@@ -120,6 +123,7 @@ public class ConsensusSession extends Session {
 		// Convert to integer
 		int proposedInteger = Integer.parseInt(proposed);
 		
+		startedTimestamp++;
 		sendProposal(event.getSourceSession(), event.getChannel(), PHASE_1, proposedInteger, event.getDir());
 
 	}
@@ -134,8 +138,14 @@ public class ConsensusSession extends Session {
 		}
 
 		// Set the value on the proposed object, for convenience
+		event.setTimestamp(event.getMessage().popInt());
 		event.setValue(event.getMessage().popInt());
 		event.setPhase(event.getMessage().popInt());
+		
+		// Ignore events with a lower timestamp than the current one
+		if (event.getTimestamp() <= decidedTimestamp) {
+			return;
+		}
 
 		// Check the phase for the Proposal
 		if (event.getPhase() == PHASE_1) {
@@ -149,6 +159,8 @@ public class ConsensusSession extends Session {
 		} else if (event.getPhase() == PHASE_DECIDE) {
 			
 			System.out.println("RC: (DECISION) Sending decision with value " + event.getValue());
+
+			decidedTimestamp = startedTimestamp;
 			sendDecision(this, event.getChannel(), event.getValue(), Direction.DOWN);
 		}
 	}
@@ -247,10 +259,9 @@ public class ConsensusSession extends Session {
 					}
 				}
 				
-				System.out.println("Selected random value " + randomValue);
-				
 				phaseOneQuorum.clear();
 				phaseTwoQuorum.clear();
+
 				sendProposal(this, event.getChannel(), PHASE_1, randomValue, Direction.DOWN);
 			}
 		}
@@ -269,6 +280,7 @@ public class ConsensusSession extends Session {
 		ProposeEvent proposal = new ProposeEvent();
 		proposal.getMessage().pushInt(phase);
 		proposal.getMessage().pushInt(value);
+		proposal.getMessage().pushInt(startedTimestamp);
 
 		proposal.setSourceSession(source);
 		proposal.setChannel(channel);

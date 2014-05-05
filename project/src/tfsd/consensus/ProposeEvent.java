@@ -44,6 +44,7 @@ import net.sf.appia.core.events.SendableEvent;
  */
 public class ProposeEvent extends SendableEvent {
 
+	private int timestamp;
 	private int value;
 	private int phase;
 	
@@ -73,5 +74,13 @@ public class ProposeEvent extends SendableEvent {
 
 	public void setPhase(int phase) {
 		this.phase = phase;
+	}
+
+	public int getTimestamp() {
+		return timestamp;
+	}
+
+	public void setTimestamp(int timestamp) {
+		this.timestamp = timestamp;
 	}
 }
