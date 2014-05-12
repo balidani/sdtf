@@ -231,7 +231,9 @@ public class ConsensusSession extends Session {
 			
 			if (count > SampleAppl.TOLERATED_FAILURES) {
 				// Found f+1 processes proposing v*, _reliable_ broadcast and decide
-				
+
+				phaseOneQuorum.clear();
+				phaseTwoQuorum.clear();
 				sendProposal(this, event.getChannel(), PHASE_DECIDE, vStar, Direction.DOWN);
 				
 			} else if (count > 0) {
