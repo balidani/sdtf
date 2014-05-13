@@ -270,7 +270,10 @@ public class ConsensusSession extends Session {
 	}
 	
 	private void handleDecide(DecideEvent event) {
-		System.out.println("RC: Deciding value " + event.getMessage().peekInt());
+		// Dummy handler, maybe decide should not be broadcasted?
+		if (event.getSourceSession() != null) {
+			System.out.println("RC: Decided on value " + event.getMessage().peekInt());
+		}
 	}
 	
 	/*
