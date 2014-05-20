@@ -80,7 +80,7 @@ public class SampleApplReader extends Thread {
         while (st.hasMoreTokens())
           msg += (st.nextToken() + " ");
         message.pushString(msg);
-        asyn.asyncGo(parentSession.channel, Direction.DOWN);
+        asyn.asyncGo(parentSession.rbChannel, Direction.DOWN);
         
       } catch (java.io.IOException e) {
         e.printStackTrace();

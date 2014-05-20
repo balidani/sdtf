@@ -52,7 +52,9 @@ import tfsd.pfd.PFDStartEvent;
  */
 public class SampleApplSession extends Session {
 
-	Channel channel;
+	public static Channel bebChannel;
+	public static Channel rbChannel;
+	
 	private ProcessSet processes;
 	private SampleApplReader reader;
 	private boolean blocked = false;
@@ -96,7 +98,8 @@ public class SampleApplSession extends Session {
 		} catch (AppiaEventException e) {
 			e.printStackTrace();
 		}
-		channel = init.getChannel();
+		
+		Channel channel = init.getChannel();
 
 		try {
 			// sends this event to open a socket in the layer that is used has
@@ -117,18 +120,36 @@ public class SampleApplSession extends Session {
 		} catch (AppiaEventException e1) {
 			e1.printStackTrace();
 		}
-		System.out.println("Channel is open.");
-		// starts the thread that reads from the keyboard.
-		reader = new SampleApplReader(this);
-		reader.start();
+
+		String channelID = channel.getChannelID();
+		if (channelID.equals("bebChannel")) {
+
+			System.out.println("BEB channel is open.");
+			bebChannel = channel;
+			
+			// starts the thread that reads from the keyboard.
+			reader = new SampleApplReader(this);
+			reader.start();
+			
+		} else if (channelID.equals("rbChannel")) {
+
+			System.out.println("RB channel is open.");
+			rbChannel = channel;
+		}
 	}
 
 	/**
 	 * @param close
 	 */
 	private void handleChannelClose(ChannelClose close) {
-		channel = null;
-		System.out.println("Channel is closed.");
+		
+		if (close.getChannel().getChannelID().equals("bebChannel")) {
+			bebChannel = null;
+			System.out.println("BEB Channel is closed.");
+		} else if (close.getChannel().getChannelID().equals("rbChannel")) {
+			rbChannel = null;
+			System.out.println("RB Channel is closed.");
+		}
 	}
 
 	/**
@@ -172,7 +193,7 @@ public class SampleApplSession extends Session {
 	 */
 	private void handleStartPFD(SampleSendableEvent event) {
 		try {
-			PFDStartEvent pfdStart = new PFDStartEvent(channel, Direction.DOWN,
+			PFDStartEvent pfdStart = new PFDStartEvent(rbChannel, Direction.DOWN,
 					this);
 			pfdStart.go();
 		} catch (AppiaEventException e) {

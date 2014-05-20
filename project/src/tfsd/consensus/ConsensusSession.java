@@ -62,9 +62,12 @@ public class ConsensusSession extends Session {
 	public static final int PHASE_DECIDE = 3;
 
 	private ProcessSet processes;
+	
 	private Map<Integer, ProposeEvent> phaseOneQuorum;
 	private Map<Integer, ProposeEvent> phaseTwoQuorum;
-	private List<ProposeEvent> proposeQueue;
+	
+	private List<ProposeEvent> phaseTwoQueue;
+	
 	private int startedTimestamp;
 	private int decidedTimestamp;
 
@@ -78,7 +81,8 @@ public class ConsensusSession extends Session {
 
 		phaseOneQuorum = new HashMap<Integer, ProposeEvent>();
 		phaseTwoQuorum = new HashMap<Integer, ProposeEvent>();
-		proposeQueue = new ArrayList<ProposeEvent>();
+		
+		phaseTwoQueue = new ArrayList<ProposeEvent>();
 		
 		startedTimestamp = 0;
 		decidedTimestamp = 0;
@@ -121,10 +125,21 @@ public class ConsensusSession extends Session {
 		System.out.println("RC: Received proposed value: " + proposed);
 
 		// Convert to integer
-		int proposedInteger = Integer.parseInt(proposed);
+		int proposedInteger = 0;
+		try {
+			 proposedInteger = Integer.parseInt(proposed);
+		} catch (NumberFormatException ex) {
+			System.out.println("RC: Error parsing proposed value");
+		}
 		
 		startedTimestamp++;
-		sendProposal(event.getSourceSession(), event.getChannel(), PHASE_1, proposedInteger, event.getDir());
+		sendProposal(event.getSourceSession(), event.getChannel(), PHASE_1, proposedInteger, event.getDir(), true);
+		
+//		if (!phaseTwoQueue.isEmpty()) {
+//			ProposeEvent proposal = phaseTwoQueue.remove(0);
+//			proposal.init();
+//			proposal.go();
+//		}
 
 	}
 
@@ -144,6 +159,7 @@ public class ConsensusSession extends Session {
 		
 		// Ignore events with a lower timestamp than the current one
 		if (event.getTimestamp() <= decidedTimestamp) {
+			System.out.printf("RC: Timestamp %d was already decided, aborting (%d)\n", event.getTimestamp(), event.getPhase());
 			return;
 		}
 
@@ -175,8 +191,9 @@ public class ConsensusSession extends Session {
 		int processId = pi.getProcessNumber();
 		phaseOneQuorum.put(processId, event);
 
-		// When we get a quorum, check if the values are identical
+		// When we get a majority, check if the values are identical
 		if (phaseOneQuorum.size() > processes.getSize() / 2) {
+			
 			ProposeEvent firstProposal = phaseOneQuorum.values().iterator().next();
 			int firstValue = firstProposal.getValue();
 			boolean identicalValues = true;
@@ -202,7 +219,13 @@ public class ConsensusSession extends Session {
 			}
 
 			// Send the broadcast for phase 2
-			sendProposal(this, event.getChannel(), PHASE_2, broadcastedValue, Direction.DOWN);
+
+			if (startedTimestamp < event.getTimestamp()) {
+				ProposeEvent queuedProposal = sendProposal(this, event.getChannel(), PHASE_2, broadcastedValue, Direction.DOWN, true);
+				phaseTwoQueue.add(queuedProposal);
+			} else {
+				sendProposal(this, event.getChannel(), PHASE_2, broadcastedValue, Direction.DOWN, true);
+			}
 		}
 	}
 
@@ -234,14 +257,15 @@ public class ConsensusSession extends Session {
 
 				phaseOneQuorum.clear();
 				phaseTwoQuorum.clear();
-				sendProposal(this, event.getChannel(), PHASE_DECIDE, vStar, Direction.DOWN);
+				
+				sendProposal(this, event.getChannel(), PHASE_DECIDE, vStar, Direction.DOWN, true);
 				
 			} else if (count > 0) {
 				// Start new round with v*
 
 				phaseOneQuorum.clear();
 				phaseTwoQuorum.clear();
-				sendProposal(this, event.getChannel(), PHASE_1, vStar, Direction.DOWN);
+				sendProposal(this, event.getChannel(), PHASE_1, vStar, Direction.DOWN, true);
 				
 			} else {
 				// Start new round with coin toss
@@ -264,7 +288,7 @@ public class ConsensusSession extends Session {
 				phaseOneQuorum.clear();
 				phaseTwoQuorum.clear();
 
-				sendProposal(this, event.getChannel(), PHASE_1, randomValue, Direction.DOWN);
+				sendProposal(this, event.getChannel(), PHASE_1, randomValue, Direction.DOWN, true);
 			}
 		}
 	}
@@ -280,7 +304,7 @@ public class ConsensusSession extends Session {
 	 * Utils 
 	 */
 	
-	private void sendProposal(Session source, Channel channel, int phase, int value, int dir) throws AppiaEventException {
+	private ProposeEvent sendProposal(Session source, Channel channel, int phase, int value, int dir, boolean send) throws AppiaEventException {
 		
 		ProposeEvent proposal = new ProposeEvent();
 		proposal.getMessage().pushInt(phase);
@@ -291,8 +315,12 @@ public class ConsensusSession extends Session {
 		proposal.setChannel(channel);
 		proposal.setDir(dir);
 
-		proposal.init();
-		proposal.go();
+		if (send) {
+			proposal.init();
+			proposal.go();
+		}
+		
+		return proposal;		
 	}
 	
 	private void sendDecision(Session source, Channel channel, int value, int dir) throws AppiaEventException {

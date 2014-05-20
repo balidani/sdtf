@@ -103,9 +103,11 @@ public class SampleAppl {
 				boolean self = (procNumber == selfProc);
 				System.err.println("Starting process " + procNumber + " Addr: "
 						+ addr + " Port number: " + portNumber);
+				
 				SampleProcess process = new SampleProcess(
 						new InetSocketAddress(addr, portNumber), procNumber,
 						self);
+				
 				set.addProcess(process, procNumber);
 			} catch (IOException e) {
 				hasMoreLines = false;
@@ -124,15 +126,11 @@ public class SampleAppl {
 	 *            set of processes
 	 * @return a new uninitialized Channel
 	 */
-	private static Channel getChannel(ProcessSet processes) {
-
-		/* Create layers and put them in an array */
-		Layer[] qos = { new TcpCompleteLayer(), new BasicBroadcastLayer(),
-				new TcpBasedPFDLayer(), new LazyRBLayer(),
-				new ConsensusLayer(), new SampleApplLayer() };
+	private static Channel getChannel(ProcessSet processes, Layer[] qos, String channelId) {
 
 		/* Create a QoS */
 		QoS myQoS = null;
+
 		try {
 			myQoS = new QoS("Lazy Reliable Broadcast QoS", qos);
 		} catch (AppiaInvalidQoSException ex) {
@@ -142,8 +140,7 @@ public class SampleAppl {
 		}
 
 		/* Create a channel. Uses default event scheduler. */
-		Channel channel = myQoS
-				.createUnboundChannel("Best effort Broadcast Channel");
+		Channel channel = myQoS.createUnboundChannel(channelId);
 		/*
 		 * Application Session requires special arguments: filename and . A
 		 * session is created and binded to the stack. Remaining ones are
@@ -152,7 +149,9 @@ public class SampleAppl {
 		SampleApplSession sas = (SampleApplSession) qos[qos.length - 1]
 				.createSession();
 		sas.init(processes);
+		
 		ChannelCursor cc = channel.getCursor();
+
 		/*
 		 * Application is the last session of the array. Positioning in it is
 		 * simple
@@ -165,22 +164,18 @@ public class SampleAppl {
 					+ ex.type);
 			System.exit(1);
 		}
+
 		return channel;
 	}
 
 	public static int TOLERATED_FAILURES = 0;
-	
+
 	public static void main(String[] args) {
 
 		int arg = 0, self = -1;
-		String filename = null;
 		try {
 			while (arg < args.length) {
-				if (args[arg].equals("-f")) {
-					arg++;
-					filename = args[arg];
-					System.out.println("Reading from file: " + filename);
-				} else if (args[arg].equals("-n")) {
+				if (args[arg].equals("-n")) {
 					arg++;
 					try {
 						self = Integer.parseInt(args[arg]);
@@ -191,8 +186,10 @@ public class SampleAppl {
 				} else if (args[arg].equals("-fail")) {
 					arg++;
 					try {
-						SampleAppl.TOLERATED_FAILURES = Integer.parseInt(args[arg]);
-						System.out.println("Failures tolerated: " + SampleAppl.TOLERATED_FAILURES);
+						SampleAppl.TOLERATED_FAILURES = Integer
+								.parseInt(args[arg]);
+						System.out.println("Failures tolerated: "
+								+ SampleAppl.TOLERATED_FAILURES);
 					} catch (NumberFormatException e) {
 						invalidArgs(e.getMessage());
 					}
@@ -211,9 +208,25 @@ public class SampleAppl {
 		 * session created. Remaining sessions are created by default. Just tell
 		 * the channel to start.
 		 */
-		Channel channel = getChannel(buildProcessSet(filename, self));
+
+		// RbChannel
+
+		/* Create layers and put them in an array */
+		Layer[] bebQos = { new TcpCompleteLayer(), new BasicBroadcastLayer(),
+				new ConsensusLayer(), new SampleApplLayer() };
+		
+		Layer[] rbQos = { new TcpCompleteLayer(), new BasicBroadcastLayer(),
+				new TcpBasedPFDLayer(), new LazyRBLayer(),
+				new ConsensusLayer(), new SampleApplLayer() };
+
+		Channel bebChannel = getChannel(buildProcessSet("conf/process_beb.conf", self), bebQos, "bebChannel");
+		Channel rbChannel = getChannel(buildProcessSet("conf/process_rb.conf", self), rbQos, "rbChannel");
+
 		try {
-			channel.start();
+			
+			rbChannel.start();
+			bebChannel.start();
+			
 		} catch (AppiaDuplicatedSessionsException ex) {
 			System.err.println("Sessions binding strangely resulted in "
 					+ "one single sessions occurring more than "
