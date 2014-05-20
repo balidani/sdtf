@@ -57,7 +57,6 @@ public class SampleApplSession extends Session {
 	
 	private ProcessSet processes;
 	private SampleApplReader reader;
-	private boolean blocked = false;
 
 	public SampleApplSession(Layer layer) {
 		super(layer);
@@ -128,7 +127,7 @@ public class SampleApplSession extends Session {
 			bebChannel = channel;
 			
 			// starts the thread that reads from the keyboard.
-			reader = new SampleApplReader(this);
+			reader = new SampleApplReader();
 			reader.start();
 			
 		} else if (channelID.equals("rbChannel")) {
@@ -193,8 +192,7 @@ public class SampleApplSession extends Session {
 	 */
 	private void handleStartPFD(SampleSendableEvent event) {
 		try {
-			PFDStartEvent pfdStart = new PFDStartEvent(rbChannel, Direction.DOWN,
-					this);
+			PFDStartEvent pfdStart = new PFDStartEvent(rbChannel, Direction.DOWN, this);
 			pfdStart.go();
 		} catch (AppiaEventException e) {
 			e.printStackTrace();
@@ -202,14 +200,12 @@ public class SampleApplSession extends Session {
 	}
 
 	private void handlePropose(SampleSendableEvent event) {
-		// TODO: implement
 
 		System.out.println("Sending ProposeEvent");
 
 		try {
 			event.go();
 		} catch (AppiaEventException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

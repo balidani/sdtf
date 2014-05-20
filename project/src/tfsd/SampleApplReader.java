@@ -32,11 +32,11 @@
 
 package tfsd;
 
+import java.util.StringTokenizer;
+
 import net.sf.appia.core.AppiaEventException;
 import net.sf.appia.core.Direction;
 import net.sf.appia.core.message.Message;
-
-import java.util.StringTokenizer;
 
 
 /**
@@ -46,13 +46,11 @@ import java.util.StringTokenizer;
  */
 public class SampleApplReader extends Thread {
 
-  private SampleApplSession parentSession;
   private java.io.BufferedReader keyb;
   private String local = null;
 
-  public SampleApplReader(SampleApplSession parentSession) {
+  public SampleApplReader() {
     super();
-    this.parentSession = parentSession;
     keyb = new java.io.BufferedReader(new java.io.InputStreamReader(System.in));
   }
 
@@ -80,7 +78,7 @@ public class SampleApplReader extends Thread {
         while (st.hasMoreTokens())
           msg += (st.nextToken() + " ");
         message.pushString(msg);
-        asyn.asyncGo(parentSession.rbChannel, Direction.DOWN);
+        asyn.asyncGo(SampleApplSession.bebChannel, Direction.DOWN);
         
       } catch (java.io.IOException e) {
         e.printStackTrace();

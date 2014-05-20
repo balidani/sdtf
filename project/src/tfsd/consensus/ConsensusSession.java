@@ -33,9 +33,7 @@
 package tfsd.consensus;
 
 import java.net.SocketAddress;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -49,6 +47,7 @@ import net.sf.appia.core.events.SendableEvent;
 import tfsd.ProcessInitEvent;
 import tfsd.ProcessSet;
 import tfsd.SampleAppl;
+import tfsd.SampleApplSession;
 import tfsd.SampleProcess;
 
 /**
@@ -66,8 +65,6 @@ public class ConsensusSession extends Session {
 	private Map<Integer, ProposeEvent> phaseOneQuorum;
 	private Map<Integer, ProposeEvent> phaseTwoQuorum;
 	
-	private List<ProposeEvent> phaseTwoQueue;
-	
 	private int startedTimestamp;
 	private int decidedTimestamp;
 
@@ -81,8 +78,6 @@ public class ConsensusSession extends Session {
 
 		phaseOneQuorum = new HashMap<Integer, ProposeEvent>();
 		phaseTwoQuorum = new HashMap<Integer, ProposeEvent>();
-		
-		phaseTwoQueue = new ArrayList<ProposeEvent>();
 		
 		startedTimestamp = 0;
 		decidedTimestamp = 0;
@@ -133,18 +128,12 @@ public class ConsensusSession extends Session {
 		}
 		
 		startedTimestamp++;
-		sendProposal(event.getSourceSession(), event.getChannel(), PHASE_1, proposedInteger, event.getDir(), true);
 		
-//		if (!phaseTwoQueue.isEmpty()) {
-//			ProposeEvent proposal = phaseTwoQueue.remove(0);
-//			proposal.init();
-//			proposal.go();
-//		}
+		sendProposal(event.getSourceSession(), event.getChannel(), PHASE_1, proposedInteger, event.getDir(), true);
 
 	}
 
 	private void handlePropose(ProposeEvent event) throws AppiaEventException {
-		// TODO implement this
 
 		// When we receive the proposal, we must broadcast it
 		if (event.getDir() == Direction.DOWN) {
@@ -165,15 +154,16 @@ public class ConsensusSession extends Session {
 
 		// Check the phase for the Proposal
 		if (event.getPhase() == PHASE_1) {
-
 			System.out.println("RC: (PHASE 1) Received incoming ProposeEvent: " + event.getValue());
-			handleProposePhase1(event);
-		} else if (event.getPhase() == PHASE_2) {
-
-			System.out.println("RC: (PHASE 2) Received incoming ProposeEvent: " + event.getValue());
-			handleProposePhase2(event);
-		} else if (event.getPhase() == PHASE_DECIDE) {
 			
+			handleProposePhase1(event);
+			
+		} else if (event.getPhase() == PHASE_2) {
+			System.out.println("RC: (PHASE 2) Received incoming ProposeEvent: " + event.getValue());
+				
+			handleProposePhase2(event);
+			
+		} else if (event.getPhase() == PHASE_DECIDE) {
 			System.out.println("RC: (DECISION) Sending decision with value " + event.getValue());
 
 			decidedTimestamp = startedTimestamp;
@@ -219,13 +209,7 @@ public class ConsensusSession extends Session {
 			}
 
 			// Send the broadcast for phase 2
-
-			if (startedTimestamp < event.getTimestamp()) {
-				ProposeEvent queuedProposal = sendProposal(this, event.getChannel(), PHASE_2, broadcastedValue, Direction.DOWN, true);
-				phaseTwoQueue.add(queuedProposal);
-			} else {
-				sendProposal(this, event.getChannel(), PHASE_2, broadcastedValue, Direction.DOWN, true);
-			}
+			sendProposal(this, event.getChannel(), PHASE_2, broadcastedValue, Direction.DOWN, true);
 		}
 	}
 
@@ -258,7 +242,7 @@ public class ConsensusSession extends Session {
 				phaseOneQuorum.clear();
 				phaseTwoQuorum.clear();
 				
-				sendProposal(this, event.getChannel(), PHASE_DECIDE, vStar, Direction.DOWN, true);
+				sendProposal(this, SampleApplSession.rbChannel, PHASE_DECIDE, vStar, Direction.DOWN, true);
 				
 			} else if (count > 0) {
 				// Start new round with v*
