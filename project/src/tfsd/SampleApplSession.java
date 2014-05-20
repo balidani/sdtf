@@ -42,6 +42,7 @@ import net.sf.appia.core.Layer;
 import net.sf.appia.core.Session;
 import net.sf.appia.core.events.channel.ChannelClose;
 import net.sf.appia.core.events.channel.ChannelInit;
+import net.sf.appia.core.message.Message;
 import net.sf.appia.protocols.common.RegisterSocketEvent;
 import tfsd.pfd.PFDStartEvent;
 
@@ -58,8 +59,12 @@ public class SampleApplSession extends Session {
 	private ProcessSet processes;
 	private SampleApplReader reader;
 
+	public static SampleApplSession instance;
+	
 	public SampleApplSession(Layer layer) {
 		super(layer);
+		
+		instance = this;
 	}
 
 	public void init(ProcessSet processes) {
@@ -176,7 +181,7 @@ public class SampleApplSession extends Session {
 		String command = event.getCommand();
 
 		if ("propose".equals(command)) {
-			handlePropose(event);
+			handleSendable(event);
 		} else if ("startpfd".equals(command)) {
 			handleStartPFD(event);
 		} else if ("help".equals(command)) {
@@ -199,13 +204,33 @@ public class SampleApplSession extends Session {
 		}
 	}
 
-	private void handlePropose(SampleSendableEvent event) {
-
-		System.out.println("Sending ProposeEvent");
+	private void handleSendable(SampleSendableEvent event) {
 
 		try {
 			event.go();
 		} catch (AppiaEventException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void broadcastDecide(int v) {
+		
+		System.out.println("[SampleApplSession] Reliably broadcasting decision value " + v);
+		
+        try {
+    		
+        	SampleSendableEvent event = new SampleSendableEvent();
+            Message message = event.getMessage();        
+            message.pushInt(v);
+            
+        	event.setChannel(SampleApplSession.rbChannel);
+        	event.setDir(Direction.DOWN);
+        	event.setSourceSession(this);
+        	event.init();
+        	event.go();
+        	
+		} catch (AppiaEventException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

@@ -1,9 +1,5 @@
 /*
  *
- * Hands-On code of the book Introduction to Reliable Distributed Programming
- * by Christian Cachin, Rachid Guerraoui and Luis Rodrigues
- * Copyright (C) 2005-2011 Luis Rodrigues
- *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -67,9 +63,9 @@ public class ConsensusSession extends Session {
 	
 	private int startedTimestamp;
 	private int decidedTimestamp;
-
+	
 	/**
-	 * Builds a new BEBSession.
+	 * Builds a new ConsensusSession.
 	 * 
 	 * @param layer
 	 */
@@ -91,9 +87,7 @@ public class ConsensusSession extends Session {
 	public void handle(Event event) {
 
 		try {
-			if (event instanceof DecideEvent) {
-				handleDecide((DecideEvent) event);
-			} else if (event instanceof ProposeEvent) {
+			if (event instanceof ProposeEvent) {
 				handlePropose((ProposeEvent) event);
 			} else if (event instanceof SendableEvent) {
 				handleSendable((SendableEvent) event);
@@ -148,26 +142,20 @@ public class ConsensusSession extends Session {
 		
 		// Ignore events with a lower timestamp than the current one
 		if (event.getTimestamp() <= decidedTimestamp) {
-			System.out.printf("RC: Timestamp %d was already decided, aborting (%d)\n", event.getTimestamp(), event.getPhase());
+			// System.out.printf("RC: Timestamp %d was already decided, aborting (%d)\n", event.getTimestamp(), event.getPhase());
 			return;
 		}
 
 		// Check the phase for the Proposal
 		if (event.getPhase() == PHASE_1) {
-			System.out.println("RC: (PHASE 1) Received incoming ProposeEvent: " + event.getValue());
+			System.out.println("RC: (PHASE 1) Received incoming ProposeEvent: " + event.getValue() + " @" + event.getTimestamp());
 			
 			handleProposePhase1(event);
 			
 		} else if (event.getPhase() == PHASE_2) {
-			System.out.println("RC: (PHASE 2) Received incoming ProposeEvent: " + event.getValue());
+			System.out.println("RC: (PHASE 2) Received incoming ProposeEvent: " + event.getValue() + " @" + event.getTimestamp());
 				
-			handleProposePhase2(event);
-			
-		} else if (event.getPhase() == PHASE_DECIDE) {
-			System.out.println("RC: (DECISION) Sending decision with value " + event.getValue());
-
-			decidedTimestamp = startedTimestamp;
-			sendDecision(this, event.getChannel(), event.getValue(), Direction.DOWN);
+			handleProposePhase2(event);	
 		}
 	}
 
@@ -199,10 +187,14 @@ public class ConsensusSession extends Session {
 			int broadcastedValue;
 
 			if (identicalValues) {
-				System.out.println("RC: A quorum was found with identical values");
+				System.out.printf("RC: (PHASE 1) A quorum was found with identical values (%d)\n", firstValue);
 				broadcastedValue = firstValue;
 			} else {
-				System.out.println("RC: A quorum was found with different values");
+				System.out.printf("RC: (PHASE 1) A quorum was found with different values: [");
+				for (ProposeEvent proposed : phaseOneQuorum.values()) {
+					System.out.printf("%d, ", proposed.getValue());
+				}
+				System.out.println("]");
 
 				// TODO: add a flag instead
 				broadcastedValue = -1;
@@ -242,7 +234,8 @@ public class ConsensusSession extends Session {
 				phaseOneQuorum.clear();
 				phaseTwoQuorum.clear();
 				
-				sendProposal(this, SampleApplSession.rbChannel, PHASE_DECIDE, vStar, Direction.DOWN, true);
+				decidedTimestamp++;
+				SampleApplSession.instance.broadcastDecide(vStar);
 				
 			} else if (count > 0) {
 				// Start new round with v*
@@ -277,13 +270,6 @@ public class ConsensusSession extends Session {
 		}
 	}
 	
-	private void handleDecide(DecideEvent event) {
-		// Dummy handler, maybe decide should not be broadcasted?
-		if (event.getSourceSession() != null) {
-			System.out.println("RC: Decided on value " + event.getMessage().peekInt());
-		}
-	}
-	
 	/*
 	 * Utils 
 	 */
@@ -305,19 +291,6 @@ public class ConsensusSession extends Session {
 		}
 		
 		return proposal;		
-	}
-	
-	private void sendDecision(Session source, Channel channel, int value, int dir) throws AppiaEventException {
-		
-		DecideEvent decision = new DecideEvent();
-		decision.getMessage().pushInt(value);
-
-		decision.setSourceSession(source);
-		decision.setChannel(channel);
-		decision.setDir(dir);
-
-		decision.init();
-		decision.go();
 	}
 
 }

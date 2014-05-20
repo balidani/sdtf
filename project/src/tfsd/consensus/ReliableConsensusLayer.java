@@ -32,47 +32,41 @@
 
 package tfsd.consensus;
 
-import tfsd.ProcessInitEvent;
 import net.sf.appia.core.Layer;
 import net.sf.appia.core.Session;
 import net.sf.appia.core.events.SendableEvent;
-import net.sf.appia.core.events.channel.ChannelInit;
 
 /**
- * Layer of the Randomized Consensus protocol.
+ * Layer of the Basic Broadcast protocol.
  * 
  * @author nuno
  */
-public class ConsensusLayer extends Layer {
+public class ReliableConsensusLayer extends Layer {
 
-  public ConsensusLayer() {
-    /* events that the protocol will create */
-    evProvide = new Class[0];
+	public ReliableConsensusLayer() {
+		/* events that the protocol will create */
+		evProvide = new Class[1];
+		evProvide[0] = DecideEvent.class;
 
-    /*
-     * events that the protocol require to work. This is a subset of the
-     * accepted events
-     */
-    evRequire = new Class[2];
-    evRequire[0] = ChannelInit.class;
-    evRequire[1] = ProcessInitEvent.class;
+		/*
+		 * events that the protocol require to work. This is a subset of the
+		 * accepted events
+		 */
+		evRequire = new Class[0];
 
-    /* events that the protocol will accept */
-    evAccept = new Class[4];
-    evAccept[0] = ProposeEvent.class;
-    evAccept[1] = SendableEvent.class;
-    evAccept[2] = ChannelInit.class;
-    evAccept[3] = ProcessInitEvent.class;
+		/* events that the protocol will accept */
+		evAccept = new Class[1];
+		evAccept[0] = SendableEvent.class;
 
-  }
+	}
 
-  /**
-   * Creates a new session to this protocol.
-   * 
-   * @see appia.Layer#createSession()
-   */
-  public Session createSession() {
-    return new ConsensusSession(this);
-  }
+	/**
+	 * Creates a new session to this protocol.
+	 * 
+	 * @see appia.Layer#createSession()
+	 */
+	public Session createSession() {
+		return new ReliableConsensusSession(this);
+	}
 
 }

@@ -52,6 +52,7 @@ import net.sf.appia.core.QoS;
 import net.sf.appia.protocols.tcpcomplete.TcpCompleteLayer;
 import tfsd.beb.BasicBroadcastLayer;
 import tfsd.consensus.ConsensusLayer;
+import tfsd.consensus.ReliableConsensusLayer;
 import tfsd.lrb.LazyRBLayer;
 import tfsd.pfd.TcpBasedPFDLayer;
 
@@ -217,7 +218,7 @@ public class SampleAppl {
 		
 		Layer[] rbQos = { new TcpCompleteLayer(), new BasicBroadcastLayer(),
 				new TcpBasedPFDLayer(), new LazyRBLayer(),
-				new ConsensusLayer(), new SampleApplLayer() };
+				new ReliableConsensusLayer(), new SampleApplLayer()};
 
 		Channel bebChannel = getChannel(buildProcessSet("conf/process_beb.conf", self), bebQos, "bebChannel");
 		Channel rbChannel = getChannel(buildProcessSet("conf/process_rb.conf", self), rbQos, "rbChannel");

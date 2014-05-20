@@ -75,8 +75,10 @@ public class SampleApplReader extends Thread {
         Message message = asyn.getMessage();
         asyn.setCommand(st.nextToken());
         String msg = "";
+        
         while (st.hasMoreTokens())
           msg += (st.nextToken() + " ");
+        
         message.pushString(msg);
         asyn.asyncGo(SampleApplSession.bebChannel, Direction.DOWN);
         
