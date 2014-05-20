@@ -37,7 +37,6 @@ import net.sf.appia.core.Session;
 import net.sf.appia.core.events.SendableEvent;
 import net.sf.appia.core.events.channel.ChannelClose;
 import net.sf.appia.core.events.channel.ChannelInit;
-import tfsd.Crash;
 import tfsd.ProcessInitEvent;
 
 /**

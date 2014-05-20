@@ -30,7 +30,7 @@
  * 
  */
 
-package tfsd;
+package tfsd.lrb;
 
 import net.sf.appia.core.AppiaEventException;
 import net.sf.appia.core.Channel;

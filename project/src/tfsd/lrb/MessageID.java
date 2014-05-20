@@ -30,7 +30,7 @@
  * 
  */
 
-package tfsd;
+package tfsd.lrb;
 
 import java.io.Serializable;
 

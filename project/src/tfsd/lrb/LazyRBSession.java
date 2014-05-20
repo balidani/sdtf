@@ -42,8 +42,6 @@ import net.sf.appia.core.Layer;
 import net.sf.appia.core.Session;
 import net.sf.appia.core.events.SendableEvent;
 import net.sf.appia.core.events.channel.ChannelInit;
-import tfsd.Crash;
-import tfsd.MessageID;
 import tfsd.ProcessInitEvent;
 import tfsd.ProcessSet;
 import tfsd.SampleProcess;

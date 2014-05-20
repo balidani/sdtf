@@ -215,7 +215,7 @@ public class SampleApplSession extends Session {
 	
 	public void broadcastDecide(int v) {
 		
-		System.out.println("[SampleApplSession] Reliably broadcasting decision value " + v);
+		System.out.println("[App] Reliably broadcasting decision value " + v);
 		
         try {
     		
@@ -233,6 +233,10 @@ public class SampleApplSession extends Session {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	public void decide(int v) {
+		System.out.printf("[App] *** Decided on value %d ***\n", v);
 	}
 
 	private void printHelp() {
