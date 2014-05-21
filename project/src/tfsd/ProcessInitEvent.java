@@ -32,6 +32,7 @@
 
 package tfsd;
 
+import tfsd.lrb.ProcessSet;
 import net.sf.appia.core.AppiaEventException;
 import net.sf.appia.core.Channel;
 import net.sf.appia.core.Event;

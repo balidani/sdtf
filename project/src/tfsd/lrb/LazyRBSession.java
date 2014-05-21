@@ -33,7 +33,9 @@
 package tfsd.lrb;
 
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
 import net.sf.appia.core.AppiaEventException;
 import net.sf.appia.core.Direction;
@@ -43,9 +45,9 @@ import net.sf.appia.core.Session;
 import net.sf.appia.core.events.SendableEvent;
 import net.sf.appia.core.events.channel.ChannelInit;
 import tfsd.ProcessInitEvent;
-import tfsd.ProcessSet;
 import tfsd.SampleProcess;
-
+import tfsd.consensus.DecideEvent;
+import tfsd.consensus.ProposeEvent;
 
 /**
  * Session implementing the Lazy Reliable Broadcast protocol.
@@ -55,173 +57,197 @@ import tfsd.SampleProcess;
  */
 public class LazyRBSession extends Session {
 
-    private ProcessSet processes;
-    private int seqNumber;
-    // array of lists
-    private LinkedList<SendableEvent>[] from;
-    // List of MessageID objects
-    private LinkedList<MessageID> delivered;
+	private ProcessSet processes;
+	private int seqNumber;
+	// array of lists
+	private LinkedList<SendableEvent>[] from;
+	// List of MessageID objects
+	private List<MessageID> delivered;
 
-    /**
-     * @param layer
-     */
-    public LazyRBSession(Layer layer) {
-        super(layer);
-        
-        delivered = new LinkedList<MessageID>();
-    }
+	/**
+	 * @param layer
+	 */
+	public LazyRBSession(Layer layer) {
+		super(layer);
+		
+		delivered = new ArrayList<MessageID>();
+	}
 
-    /**
-     * Main event handler
-     */
-    public void handle(Event event) {
-        // Init events. Channel Init is from Appia and ProcessInitEvent is to know
-        // the elements of the group
-        if (event instanceof ChannelInit)
-            handleChannelInit((ChannelInit) event);
-        else if (event instanceof ProcessInitEvent)
-            handleProcessInitEvent((ProcessInitEvent) event);
+	/**
+	 * Main event handler
+	 */
+	public void handle(Event event) {
+		// Init events. Channel Init is from Appia and ProcessInitEvent is to
+		// know
+		// the elements of the group
+		if (event instanceof ChannelInit) {
+			handleChannelInit((ChannelInit) event);
+		} else if (event instanceof ProcessInitEvent) {
+			handleProcessInitEvent((ProcessInitEvent) event);
 
-        else if (event instanceof SendableEvent) {
-            if (event.getDir() == Direction.DOWN)
-                // UPON event from the above protocol (or application)
-                rbBroadcast((SendableEvent) event);
-            else
-                // UPON event from the bottom protocol (or perfect point2point links)
-                bebDeliver((SendableEvent) event);
-        }
-        else if (event instanceof Crash)
-            handleCrash((Crash) event);
-    }
+		} else if (event instanceof DecideEvent) {
+			if (event.getDir() == Direction.DOWN) {
+				// UPON event from the above protocol (or application)
+				rbBroadcast((DecideEvent) event);
+			} else {
+				// UPON event from the bottom protocol (or perfect point2point
+				// links)
+				bebDeliver((DecideEvent) event);
+			}
 
-    /**
-     * @param init
-     */
-    private void handleChannelInit(ChannelInit init) {
-        try {
-            init.go();
-        } catch (AppiaEventException e) {
-            e.printStackTrace();
-        }
-    }
+		} else if (event instanceof ProposeEvent) {
+			
+			if (event.getDir() == Direction.DOWN) {
+				bebBroadcast((SendableEvent) event);
+			} else {
+				try {
+					event.go();
+				} catch (AppiaEventException e) {
+					e.printStackTrace();
+				}
+			}
+			
+		} else if (event instanceof SendableEvent) {
 
-    /**
-     * @param event
-     */
-    @SuppressWarnings("unchecked")
-    private void handleProcessInitEvent(ProcessInitEvent event) {
-        processes = event.getProcessSet();
-        try {
-            event.go();
-        } catch (AppiaEventException e) {
-            e.printStackTrace();
-        }
+			if (event.getDir() == Direction.DOWN) {
+				bebBroadcast((SendableEvent) event);
+			}
+			
+		} else if (event instanceof Crash) {
+			handleCrash((Crash) event);
+		}
+	}
 
-        from = new LinkedList[processes.getSize()];
-        for (int i = 0; i < from.length; i++)
-            from[i] = new LinkedList<SendableEvent>();
-    }
+	/**
+	 * @param init
+	 */
+	private void handleChannelInit(ChannelInit init) {
+		try {
+			init.go();
+		} catch (AppiaEventException e) {
+			e.printStackTrace();
+		}
+	}
 
-    /**
-     * Called when the above protocol sends a message.
-     * 
-     * @param event
-     */
-    private void rbBroadcast(SendableEvent event) {
-        // first we take care of the header of the message
-        SampleProcess self = processes.getSelfProcess();
-        MessageID msgID = new MessageID(self.getProcessNumber(), seqNumber);
-        seqNumber++;
-        // System.out.println("RB: broadcasting message.");
-        event.getMessage().pushObject(msgID);
-        // broadcast the message
-        bebBroadcast(event);
-    }
+	/**
+	 * @param event
+	 */
+	@SuppressWarnings("unchecked")
+	private void handleProcessInitEvent(ProcessInitEvent event) {
+		processes = event.getProcessSet();
+		try {
+			event.go();
+		} catch (AppiaEventException e) {
+			e.printStackTrace();
+		}
 
-    /**
-     * Called when the lower protocol delivers a message.
-     * 
-     * @param event
-     */
-    private void bebDeliver(SendableEvent event) {
-        // System.out.println("RB: Received message from beb.");
-        MessageID msgID = (MessageID) event.getMessage().peekObject();
-        if (!delivered.contains(msgID)) {
-            // System.out.println("RB: message is new.");
-            delivered.add(msgID);
-            // removes the header from the message (sender and seqNumber) and delivers
-            // it
-            SendableEvent cloned = null;
-            try {
-                cloned = (SendableEvent) event.cloneEvent();
-            } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
-                return;
-            }
-            event.getMessage().popObject();
-            try {
-                event.go();
-            } catch (AppiaEventException e) {
-                e.printStackTrace();
-            }
-            // adds message to the "from" array
-            SampleProcess pi = processes.getProcess((SocketAddress) event.source);
-            int piNumber = pi.getProcessNumber();
-            from[piNumber].add(cloned);
-            /*
-             * resends the message if the source is no longer correct
-             */
-            if (!pi.isCorrect()) {
-                SendableEvent retransmission = null;
+		from = new LinkedList[processes.getSize()];
+		for (int i = 0; i < from.length; i++)
+			from[i] = new LinkedList<SendableEvent>();
+	}
 
-                try {
-                    retransmission = (SendableEvent) cloned.cloneEvent();
-                } catch (CloneNotSupportedException e1) {
-                    e1.printStackTrace();
-                }
-                bebBroadcast(retransmission);
-            }
-        }
-    }
+	/**
+	 * Called when the above protocol sends a message.
+	 * 
+	 * @param event
+	 */
+	private void rbBroadcast(SendableEvent event) {
+		// first we take care of the header of the message
+		SampleProcess self = processes.getSelfProcess();
+		MessageID msgID = new MessageID(self.getProcessNumber(), seqNumber);
+		seqNumber++;
+		// System.out.println("RB: broadcasting message.");
+		event.getMessage().pushObject(msgID);
+		// broadcast the message
+		bebBroadcast(event);
+	}
 
-    /**
-     * Called by this protocol to send a message to the lower protocol.
-     * 
-     * @param event
-     */
-    private void bebBroadcast(SendableEvent event) {
-        // System.out.println("RB: sending message to beb.");
-        try {
-            event.setDir(Direction.DOWN);
-            event.setSourceSession(this);
-            event.init();
-            event.go();
-        } catch (AppiaEventException e) {
-            e.printStackTrace();
-        }
-    }
+	/**
+	 * Called when the lower protocol delivers a message.
+	 * 
+	 * @param event
+	 */
+	private void bebDeliver(SendableEvent event) {
+		// System.out.println("RB: Received message from beb.");
+		MessageID msgID = (MessageID) event.getMessage().peekObject();
+		if (!delivered.contains(msgID)) {
+			// System.out.println("RB: message is new.");
+			delivered.add(msgID);
+			// removes the header from the message (sender and seqNumber) and
+			// delivers
+			// it
+			SendableEvent cloned = null;
+			try {
+				cloned = (SendableEvent) event.cloneEvent();
+			} catch (CloneNotSupportedException e) {
+				e.printStackTrace();
+				return;
+			}
+			event.getMessage().popObject();
+			try {
+				event.go();
+			} catch (AppiaEventException e) {
+				e.printStackTrace();
+			}
+			// adds message to the "from" array
+			SampleProcess pi = processes
+					.getProcess((SocketAddress) event.source);
+			int piNumber = pi.getProcessNumber();
+			from[piNumber].add(cloned);
+			/*
+			 * resends the message if the source is no longer correct
+			 */
+			if (!pi.isCorrect()) {
+				SendableEvent retransmission = null;
 
-    /**
-     * Called when some process crashed.
-     * 
-     * @param crash
-     */
-    private void handleCrash(Crash crash) {
-        int pi = crash.getCrashedProcess();
-        // System.out.println("Process " + pi + " failed.");
+				try {
+					retransmission = (SendableEvent) cloned.cloneEvent();
+				} catch (CloneNotSupportedException e1) {
+					e1.printStackTrace();
+				}
+				bebBroadcast(retransmission);
+			}
+		}
+	}
 
-        try {
-            crash.go();
-        } catch (AppiaEventException ex) {
-            ex.printStackTrace();
-        }
+	/**
+	 * Called by this protocol to send a message to the lower protocol.
+	 * 
+	 * @param event
+	 */
+	private void bebBroadcast(SendableEvent event) {
+		// System.out.println("RB: sending message to beb.");
+		try {
+			event.setDir(Direction.DOWN);
+			event.setSourceSession(this);
+			event.init();
+			event.go();
+		} catch (AppiaEventException e) {
+			e.printStackTrace();
+		}
+	}
 
-        // changes the state of the process to "failed"
-        processes.getProcess(pi).setCorrect(false);
+	/**
+	 * Called when some process crashed.
+	 * 
+	 * @param crash
+	 */
+	private void handleCrash(Crash crash) {
+		int pi = crash.getCrashedProcess();
+		System.out.println("Process " + pi + " failed.");
 
-        // resends the messages of the failed process
-        for(SendableEvent event : from[pi])
-            bebBroadcast(event);
-        from[pi].clear();
-    }
+		try {
+			crash.go();
+		} catch (AppiaEventException ex) {
+			ex.printStackTrace();
+		}
+
+		// changes the state of the process to "failed"
+		processes.getProcess(pi).setCorrect(false);
+
+		// resends the messages of the failed process
+		for (SendableEvent event : from[pi])
+			bebBroadcast(event);
+		from[pi].clear();
+	}
 }

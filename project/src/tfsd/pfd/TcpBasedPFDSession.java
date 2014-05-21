@@ -34,6 +34,7 @@ package tfsd.pfd;
 
 import tfsd.*;
 import tfsd.lrb.Crash;
+import tfsd.lrb.ProcessSet;
 import net.sf.appia.core.*;
 import net.sf.appia.core.events.channel.ChannelInit;
 import net.sf.appia.protocols.tcpcomplete.TcpUndeliveredEvent;

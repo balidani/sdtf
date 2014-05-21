@@ -33,8 +33,8 @@
 package tfsd.beb;
 
 import tfsd.ProcessInitEvent;
-import tfsd.ProcessSet;
 import tfsd.SampleProcess;
+import tfsd.lrb.ProcessSet;
 import net.sf.appia.core.AppiaEventException;
 import net.sf.appia.core.Direction;
 import net.sf.appia.core.Event;

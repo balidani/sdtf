@@ -30,10 +30,12 @@
  * 
  */
 
-package tfsd;
+package tfsd.lrb;
 
 import java.io.Serializable;
 import java.net.SocketAddress;
+
+import tfsd.SampleProcess;
 
 /**
  * A set of sample processes.

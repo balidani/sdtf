@@ -44,6 +44,7 @@ import net.sf.appia.core.events.channel.ChannelClose;
 import net.sf.appia.core.events.channel.ChannelInit;
 import net.sf.appia.core.message.Message;
 import net.sf.appia.protocols.common.RegisterSocketEvent;
+import tfsd.lrb.ProcessSet;
 import tfsd.pfd.PFDStartEvent;
 
 /**
@@ -53,7 +54,7 @@ import tfsd.pfd.PFDStartEvent;
  */
 public class SampleApplSession extends Session {
 
-	public static Channel bebChannel;
+//	public static Channel bebChannel;
 	public static Channel rbChannel;
 	
 	private ProcessSet processes;
@@ -126,19 +127,15 @@ public class SampleApplSession extends Session {
 		}
 
 		String channelID = channel.getChannelID();
-		if (channelID.equals("bebChannel")) {
-
-			System.out.println("BEB channel is open.");
-			bebChannel = channel;
 			
-			// starts the thread that reads from the keyboard.
-			reader = new SampleApplReader();
-			reader.start();
-			
-		} else if (channelID.equals("rbChannel")) {
+		if (channelID.equals("rbChannel")) {
 
 			System.out.println("RB channel is open.");
 			rbChannel = channel;
+
+			// starts the thread that reads from the keyboard.
+			reader = new SampleApplReader();
+			reader.start();
 		}
 	}
 
@@ -147,13 +144,8 @@ public class SampleApplSession extends Session {
 	 */
 	private void handleChannelClose(ChannelClose close) {
 		
-		if (close.getChannel().getChannelID().equals("bebChannel")) {
-			bebChannel = null;
-			System.out.println("BEB Channel is closed.");
-		} else if (close.getChannel().getChannelID().equals("rbChannel")) {
-			rbChannel = null;
-			System.out.println("RB Channel is closed.");
-		}
+		rbChannel = null;
+		System.out.println("RB Channel is closed");
 	}
 
 	/**

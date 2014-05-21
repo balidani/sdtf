@@ -54,6 +54,7 @@ import tfsd.beb.BasicBroadcastLayer;
 import tfsd.consensus.ConsensusLayer;
 import tfsd.consensus.ReliableConsensusLayer;
 import tfsd.lrb.LazyRBLayer;
+import tfsd.lrb.ProcessSet;
 import tfsd.pfd.TcpBasedPFDLayer;
 
 /**
@@ -211,22 +212,21 @@ public class SampleAppl {
 		 */
 
 		// RbChannel
-
-		/* Create layers and put them in an array */
-		Layer[] bebQos = { new TcpCompleteLayer(), new BasicBroadcastLayer(),
-				new ConsensusLayer(), new SampleApplLayer() };
 		
-		Layer[] rbQos = { new TcpCompleteLayer(), new BasicBroadcastLayer(),
-				new TcpBasedPFDLayer(), new LazyRBLayer(),
-				new ReliableConsensusLayer(), new SampleApplLayer()};
+		Layer[] rbQos = { 
+				new TcpCompleteLayer(), 
+				new BasicBroadcastLayer(),
+				new TcpBasedPFDLayer(), 
+				new LazyRBLayer(),
+				new ConsensusLayer(), 
+				new SampleApplLayer()
+		};
 
-		Channel bebChannel = getChannel(buildProcessSet("conf/process_beb.conf", self), bebQos, "bebChannel");
 		Channel rbChannel = getChannel(buildProcessSet("conf/process_rb.conf", self), rbQos, "rbChannel");
 
 		try {
 			
 			rbChannel.start();
-			bebChannel.start();
 			
 		} catch (AppiaDuplicatedSessionsException ex) {
 			System.err.println("Sessions binding strangely resulted in "

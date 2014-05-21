@@ -38,7 +38,6 @@ import net.sf.appia.core.AppiaEventException;
 import net.sf.appia.core.Direction;
 import net.sf.appia.core.message.Message;
 
-
 /**
  * Class that reads from the keyboard and generates events to the appia Channel.
  * 
@@ -46,47 +45,48 @@ import net.sf.appia.core.message.Message;
  */
 public class SampleApplReader extends Thread {
 
-  private java.io.BufferedReader keyb;
-  private String local = null;
+	private java.io.BufferedReader keyb;
+	private String local = null;
 
-  public SampleApplReader() {
-    super();
-    keyb = new java.io.BufferedReader(new java.io.InputStreamReader(System.in));
-  }
+	public SampleApplReader() {
+		super();
+		keyb = new java.io.BufferedReader(new java.io.InputStreamReader(
+				System.in));
+	}
 
-  public void run() {
-    while (true) {
-      try {
-        try {
-          Thread.sleep(500);
-        } catch (InterruptedException e) {
-        }
-        System.out.print("> ");
-        local = keyb.readLine();
-        if (local.equals(""))
-          continue;
-        StringTokenizer st = new StringTokenizer(local);
-        
-        /*
-         * creates the event, push the message and sends this to the appia
-         * channel.
-         */
-        SampleSendableEvent asyn = new SampleSendableEvent();
-        Message message = asyn.getMessage();
-        asyn.setCommand(st.nextToken());
-        String msg = "";
-        
-        while (st.hasMoreTokens())
-          msg += (st.nextToken() + " ");
-        
-        message.pushString(msg);
-        asyn.asyncGo(SampleApplSession.bebChannel, Direction.DOWN);
-        
-      } catch (java.io.IOException e) {
-        e.printStackTrace();
-      } catch (AppiaEventException e) {
-        e.printStackTrace();
-      }
-    }
-  }
+	public void run() {
+		while (true) {
+			try {
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+				}
+				System.out.print("> ");
+				local = keyb.readLine();
+				if (local.equals(""))
+					continue;
+				StringTokenizer st = new StringTokenizer(local);
+
+				/*
+				 * creates the event, push the message and sends this to the
+				 * appia channel.
+				 */
+				SampleSendableEvent asyn = new SampleSendableEvent();
+				Message message = asyn.getMessage();
+				asyn.setCommand(st.nextToken());
+				String msg = "";
+
+				while (st.hasMoreTokens())
+					msg += (st.nextToken() + " ");
+
+				message.pushString(msg);
+				asyn.asyncGo(SampleApplSession.rbChannel, Direction.DOWN);
+
+			} catch (java.io.IOException e) {
+				e.printStackTrace();
+			} catch (AppiaEventException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 }
