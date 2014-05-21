@@ -40,8 +40,11 @@ import net.sf.appia.core.Event;
 import net.sf.appia.core.Layer;
 import net.sf.appia.core.Session;
 import net.sf.appia.core.events.SendableEvent;
-import tfsd.*;
-import tfsd.ConsensusAppSession;
+import tfsd.ProcessInitEvent;
+import tfsd.ProcessSet;
+import tfsd.SampleAppl;
+import tfsd.SampleApplSession;
+import tfsd.SampleProcess;
 
 /**
  * Session implementing the Randomized Consensus Protocol
@@ -232,7 +235,7 @@ public class ConsensusSession extends Session {
 				phaseTwoQuorum.clear();
 				
 				decidedTimestamp++;
-				ConsensusAppSession.instance.broadcastDecide(vStar);
+				SampleApplSession.instance.broadcastDecide(vStar);
 				
 			} else if (count > 0) {
 				// Start new round with v*
