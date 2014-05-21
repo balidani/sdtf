@@ -51,12 +51,12 @@ Instituto Superior T\'{e}cnico\\
 
 Two channels are required according to the Randomized Consensus algorithm. 
 For the first phase of the protocol, it is sufficient to use 
-\textit{Best-effort Broadcast}. For the final part of the second phase, 
+\textit{Best-Effort Broadcast}. For the final part of the second phase, 
 \textit{Reliable Broadcast} is required. For this reason we used two 
 separate stacks, which can be seen on figure \ref{fig:stack}.
 
 For the reliable channel, we had to use Lazy Reliable Broadcast on top
-of a TCP-based Perfect Failure Detector. The best-effor channel is much simpler, 
+of a TCP-based Perfect Failure Detector. The best-effort channel is much simpler, 
 only requiring a basic broadcast layer.
 
 The implementation of the randomized consensus algorithm is in the 
@@ -109,7 +109,9 @@ queues of the quorums are emptied.
 
 Timestamps are used to differentiate between different proposals. There is a started 
 and a decided timestamp. When we see a proposal with a timestamp that is less-than 
-or equal to our decided timestamp, we can discard it.
+or equal to our decided timestamp, we can discard it. 
+
+A possible feature is to store all the proposals that have a timestamp higher or equal.
 
 %-------------------------------------------------------------------------
 
@@ -129,19 +131,17 @@ To test our implementation, we have developed a rapidly-exploring random tree ge
 \label{fig:rrt}
 \end{figure}
 
-Rapidly-exploring random tree generator is a nice application to test with. It creates random trees based on the random values for each iteration. To get the same tree in every process, the only way is reach consensus for each iterations random value. So in each iteration, every process proposes its own value. Deciding on each iteration lets our consensus to run many times in quick succession which makes it possible to expose errors that are not visible by longer time windows between each decision.
+Rapidly-exploring random tree generator is a suitable application for testing. It creates random trees based on the random values for each iteration. To get the same tree in every process, the only way is reach consensus for each iterations random value. So in each iteration, every process proposes its own value. Deciding on each iteration lets our consensus to run many times in quick succession which makes it possible to expose errors that are not visible by longer time windows between each decision.
  
 
 %-------------------------------------------------------------------------
 
 \Section{Evaluation}
 
-Current implementation of our consensus with our test application reaches consensus 2000 times in 2 minutes. In each process, resulting trees are identical which verifies the correctness of our implementation for consensus.
+The current implementation of the consensus, with the demo application reaches consensus 2000 times in 2 minutes. In each process, resulting trees are identical which verifies the correctness of our implementation for consensus. %TODO: add more info.
 
 %-------------------------------------------------------------------------
 
 \bibliographystyle{latex8}
 \bibliography{latex8}
-
- 
 \end{document}
