@@ -113,11 +113,30 @@ or equal to our decided timestamp, we can discard it.
 
 %-------------------------------------------------------------------------
 
-\Section{Running the code}
+\Section{Implementation \& Testing}
+
+\subsection{Consensus Logic}
+
+\subsection{Sample Application}
+
+To test our implementation, we have developed a rapidly-exploring random tree generator. Rapidly-exploring random trees\cite{Lavalle98rapidly-exploringrandom} enables searching n dimensional spaces efficiently. They grow through unexplored directions, and mainly used in automated robotic path planning. Related to our topic, distributing the same n dimensional path tree to efficiently can be done by reaching a consensus on each iteration to pick the destination point.
+
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=80mm]{rrt.png}
+\caption{Visualization of RRT in 2D space}
+\label{fig:rrt}
+\end{figure}
+
+Rapidly-exploring random tree generator is a nice application to test with. It creates random trees based on the random values for each iteration. To get the same tree in every process, the only way is reach consensus for each iterations random value. So in each iteration, every process proposes its own value. Deciding on each iteration lets our consensus to run many times in quick succession which makes it possible to expose errors that are not visible by longer time windows between each decision.
+ 
 
 %-------------------------------------------------------------------------
 
 \Section{Evaluation}
+
+Current implementation of our consensus with our test application reaches consensus 2000 times in 2 minutes. In each process, resulting trees are identical which verifies the correctness of our implementation for consensus.
 
 %-------------------------------------------------------------------------
 
