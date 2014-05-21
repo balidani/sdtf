@@ -230,7 +230,6 @@ public class SampleApplSession extends Session {
 	}
 	
 	public void decide(int v) {
-		System.out.printf("[App] *** Decided on value %d ***\n", v);
 		
 		rrtHandler.notifyDecision(v);
 	}

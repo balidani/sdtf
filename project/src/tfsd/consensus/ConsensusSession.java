@@ -58,8 +58,8 @@ public class ConsensusSession extends Session {
 
 	private ProcessSet processes;
 
-	private Map<Integer, ProposeEvent> phaseOneQuorum;
-	private Map<Integer, ProposeEvent> phaseTwoQuorum;
+	private HashMap<Integer, HashMap<Integer, ProposeEvent>> phaseOneQuorum;
+	private HashMap<Integer, HashMap<Integer, ProposeEvent>> phaseTwoQuorum;
 
 	private int startedTimestamp;
 	private int decidedTimestamp;
@@ -72,8 +72,8 @@ public class ConsensusSession extends Session {
 	public ConsensusSession(Layer layer) {
 		super(layer);
 
-		phaseOneQuorum = new HashMap<Integer, ProposeEvent>();
-		phaseTwoQuorum = new HashMap<Integer, ProposeEvent>();
+		phaseOneQuorum = new HashMap<Integer, HashMap<Integer, ProposeEvent>>();
+		phaseTwoQuorum = new HashMap<Integer, HashMap<Integer, ProposeEvent>>();
 
 		startedTimestamp = 0;
 		decidedTimestamp = 0;
@@ -85,7 +85,7 @@ public class ConsensusSession extends Session {
 	 * @see appia.Session#handle(appia.Event)
 	 */
 	public void handle(Event event) {
-		
+
 		try {
 			if (event instanceof DecideEvent) {
 				handleDecide((DecideEvent) event);
@@ -131,16 +131,22 @@ public class ConsensusSession extends Session {
 	}
 
 	private void handleDecide(DecideEvent event) {
-		
+
 		if (event.getDir() == Direction.UP) {
-			
+
 			int timestamp = event.getMessage().popInt();
 			int value = event.getMessage().popInt();
-			
-			if (timestamp == startedTimestamp) {
-				if (event.getSourceSession() != null) {
-					SampleApplSession.instance.decide(value);
-				}
+
+			if (timestamp == startedTimestamp && timestamp > decidedTimestamp) {
+				System.out.println("*** DECIDING " + value + " *** "
+						+ timestamp + ", " + startedTimestamp + ", "
+						+ decidedTimestamp);
+				SampleApplSession.instance.decide(value);
+
+				decidedTimestamp++;
+
+				// if (event.getSourceSession() != null) {
+				// }
 			}
 		}
 	}
@@ -157,7 +163,7 @@ public class ConsensusSession extends Session {
 		event.setTimestamp(event.getMessage().popInt());
 		event.setValue(event.getMessage().popInt());
 		event.setPhase(event.getMessage().popInt());
-		
+
 		// Ignore events with a lower timestamp than the current one
 		if (event.getTimestamp() <= decidedTimestamp) {
 			// System.out.printf("RC: Timestamp %d was already decided, aborting (%d)\n",
@@ -167,15 +173,9 @@ public class ConsensusSession extends Session {
 
 		// Check the phase for the Proposal
 		if (event.getPhase() == PHASE_1) {
-			System.out.println("RC: (PHASE 1) Received incoming ProposeEvent: "
-					+ event.getValue() + " @" + event.getTimestamp());
-
 			handleProposePhase1(event);
 
 		} else if (event.getPhase() == PHASE_2) {
-			System.out.println("RC: (PHASE 2) Received incoming ProposeEvent: "
-					+ event.getValue() + " @" + event.getTimestamp());
-
 			handleProposePhase2(event);
 		}
 	}
@@ -188,16 +188,28 @@ public class ConsensusSession extends Session {
 		// Save each incoming value according to its process id
 		SampleProcess pi = processes.getProcess((SocketAddress) event.source);
 		int processId = pi.getProcessNumber();
-		phaseOneQuorum.put(processId, event);
+
+		int ts = event.getTimestamp();
+
+		if (!phaseOneQuorum.containsKey(ts)) {
+			HashMap<Integer, ProposeEvent> newQuorum = new HashMap<Integer, ProposeEvent>();
+			phaseOneQuorum.put(ts, newQuorum);
+		}
+
+		HashMap<Integer, ProposeEvent> tsQuorum = phaseOneQuorum.get(ts);
+		tsQuorum.put(processId, event);
+
+		System.out
+				.printf("RC: (PHASE 1) Received incoming ProposeEvent: %d @%d, from %d\n",
+						event.getValue(), event.getTimestamp(), processId);
 
 		// When we get a majority, check if the values are identical
-		if (phaseOneQuorum.size() > processes.getSize() / 2) {
+		if (tsQuorum.size() > processes.getSize() / 2) {
 
-			ProposeEvent firstProposal = phaseOneQuorum.values().iterator()
-					.next();
+			ProposeEvent firstProposal = tsQuorum.values().iterator().next();
 			int firstValue = firstProposal.getValue();
 			boolean identicalValues = true;
-			for (ProposeEvent proposed : phaseOneQuorum.values()) {
+			for (ProposeEvent proposed : tsQuorum.values()) {
 				if (proposed.getValue() != firstValue) {
 					identicalValues = false;
 					break;
@@ -217,7 +229,7 @@ public class ConsensusSession extends Session {
 			} else {
 				System.out
 						.printf("RC: (PHASE 1) A quorum was found with different values: [");
-				for (ProposeEvent proposed : phaseOneQuorum.values()) {
+				for (ProposeEvent proposed : tsQuorum.values()) {
 					System.out.printf("%d, ", proposed.getValue());
 				}
 				System.out.println("]");
@@ -238,10 +250,24 @@ public class ConsensusSession extends Session {
 		// Save each incoming value according to its process id
 		SampleProcess pi = processes.getProcess((SocketAddress) event.source);
 		int processId = pi.getProcessNumber();
-		phaseTwoQuorum.put(processId, event);
+
+		int ts = event.getTimestamp();
+
+		if (!phaseTwoQuorum.containsKey(ts)) {
+			HashMap<Integer, ProposeEvent> newQuorum = new HashMap<Integer, ProposeEvent>();
+			phaseTwoQuorum.put(ts, newQuorum);
+		}
+
+		HashMap<Integer, ProposeEvent> tsTwoQuorum = phaseTwoQuorum.get(ts);
+		HashMap<Integer, ProposeEvent> tsOneQuorum = phaseOneQuorum.get(ts);
+		tsTwoQuorum.put(processId, event);
+
+		System.out
+				.printf("RC: (PHASE 2) Received incoming ProposeEvent: %d @%d, from %d\n",
+						event.getValue(), event.getTimestamp(), processId);
 
 		// When we get a quorum, check if the values are identical
-		if (phaseTwoQuorum.size() == processes.getSize()
+		if (tsTwoQuorum.size() == processes.getSize()
 				- SampleAppl.TOLERATED_FAILURES) {
 
 			System.out.println("RC: Got a quorum for phase 2");
@@ -250,7 +276,7 @@ public class ConsensusSession extends Session {
 			int count = 0;
 			int vStar = -1;
 
-			for (ProposeEvent proposed : phaseTwoQuorum.values()) {
+			for (ProposeEvent proposed : tsTwoQuorum.values()) {
 				if (proposed.getValue() != -1) {
 					vStar = proposed.getValue();
 					count++;
@@ -258,48 +284,49 @@ public class ConsensusSession extends Session {
 			}
 
 			if (count > SampleAppl.TOLERATED_FAILURES) {
-				// Found f+1 processes proposing v*, _reliable_ broadcast and
+				// Found f+1 processes proposing v*, _reliable_ broadcast
+				// and
 				// decide
 
-				phaseOneQuorum.clear();
-				phaseTwoQuorum.clear();
+				tsTwoQuorum.clear();
+				tsOneQuorum.clear();
 
-				decidedTimestamp++;
 				sendDecision(this, event.getChannel(), PHASE_DECIDE, vStar,
 						Direction.DOWN);
 
 			} else if (count > 0) {
 				// Start new round with v*
 
-				phaseOneQuorum.clear();
-				phaseTwoQuorum.clear();
+				tsTwoQuorum.clear();
+				tsOneQuorum.clear();
 				sendProposal(this, event.getChannel(), PHASE_1, vStar,
 						Direction.DOWN);
 
 			} else {
 				// Start new round with coin toss
 				// Pick a random value from the first quorum
-				// TODO: Maybe keep a set of values which is persistent between
+				// TODO: Maybe keep a set of values which is persistent
+				// between
 				// rounds
 				// (it's not emptied after each round)
 
 				boolean foundProposal = false;
-				int randomValue = phaseOneQuorum.values().iterator().next()
+				int randomValue = tsOneQuorum.values().iterator().next()
 						.getValue();
 
 				while (!foundProposal) {
 					int randomIndex = (new Random()).nextInt()
-							% phaseOneQuorum.size();
-					if (phaseOneQuorum.containsKey(randomIndex)) {
-						ProposeEvent randomProposal = (ProposeEvent) phaseOneQuorum
+							% tsOneQuorum.size();
+					if (tsOneQuorum.containsKey(randomIndex)) {
+						ProposeEvent randomProposal = (ProposeEvent) tsOneQuorum
 								.get(randomIndex);
 						randomValue = randomProposal.getValue();
 						foundProposal = true;
 					}
 				}
 
-				phaseOneQuorum.clear();
-				phaseTwoQuorum.clear();
+				tsTwoQuorum.clear();
+				tsOneQuorum.clear();
 
 				sendProposal(this, event.getChannel(), PHASE_1, randomValue,
 						Direction.DOWN);

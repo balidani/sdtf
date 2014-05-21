@@ -16,15 +16,20 @@ import tfsd.SampleSendableEvent;
 
 public class RRTGenerator {
 	List<Point> points;
+	
 	int height;
 	int width;
 	Tree tree;
 
+	private List<Integer> decisions;
 	public int decision;
 
 	public RRTGenerator(String fileName) {
+		
 		this.tree = new Tree();
 		points = new ArrayList<Point>();
+		
+		decisions = new ArrayList<Integer>();
 		decision = -1;
 
 		// Read file, get the list of vertices
@@ -100,6 +105,7 @@ public class RRTGenerator {
 			} catch (InterruptedException e) {}
 			
 			System.out.println("[RRT] Got decision " + decision);
+			decisions.add(decision);
 			
 			selection = points.get(decision);
 			connect(selection, tree.edges);
@@ -120,7 +126,11 @@ public class RRTGenerator {
 
 	private void finished() {
 		System.out.println("Finished");
-		tree.printTree();
+		// tree.printTree();
+		for (int i : decisions) {
+			System.out.print(i + " ");
+		}
+		System.out.println();
 	}
 
 	public Point findNearest(Point t, List<Point> points) {
