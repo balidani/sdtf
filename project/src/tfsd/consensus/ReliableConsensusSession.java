@@ -28,7 +28,7 @@
 
 package tfsd.consensus;
 
-import tfsd.SampleApplSession;
+import tfsd.ConsensusAppSession;
 import net.sf.appia.core.AppiaEventException;
 import net.sf.appia.core.Direction;
 import net.sf.appia.core.Event;
@@ -76,7 +76,7 @@ public class ReliableConsensusSession extends Session {
 		
 		// Dummy handler, maybe decide should not be broadcasted?
 		if (event.getSourceSession() != null) {
-			SampleApplSession.instance.decide(event.getMessage().peekInt());
+			ConsensusAppSession.instance.decide(event.getMessage().peekInt());
 		}
 	}
 
