@@ -8,7 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import javax.swing.SwingUtilities;
+import net.sf.appia.core.AppiaEventException;
+import net.sf.appia.core.Direction;
+import net.sf.appia.core.message.Message;
+import tfsd.SampleApplSession;
+import tfsd.SampleSendableEvent;
 
 public class RRTGenerator {
 	List<Point> points;
@@ -16,11 +20,14 @@ public class RRTGenerator {
 	int width;
 	Tree tree;
 
+	public int decision;
+
 	public RRTGenerator(String fileName) {
 		this.tree = new Tree();
 		points = new ArrayList<Point>();
+		decision = -1;
 
-		// TODO read file, get the list of vertices
+		// Read file, get the list of vertices
 		BufferedReader br;
 		try {
 			br = new BufferedReader(new FileReader(fileName));
@@ -38,10 +45,8 @@ public class RRTGenerator {
 			}
 			br.close();
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -59,38 +64,63 @@ public class RRTGenerator {
 		return points;
 	}
 
-	public void generate() {
-		Tree rrt = this.tree;
 
-		Point selection = new Point(width / 2, height / 2);
-		Point nearest = findNearest(selection, points);
-		rrt.vertices.add(nearest);
-		rrt.edges.add(new Edge(nearest, nearest));
-		points.remove(nearest);
+	public synchronized void generate() {
 
-		Random rand = new Random();
-		while (points.size() != 0) {
+		while (points.size() > 0) {
+
+			// Take a point
+			Point selection = new Point(width / 2, height / 2);
+			Point nearest = findNearest(selection, points);
+
+			tree.vertices.add(nearest);
+			tree.edges.add(new Edge(nearest, nearest));
+
+			points.remove(nearest);
+
+			// Generate a random number for proposal
+			Random rand = new Random();
 			int dex = rand.nextInt(points.size());
-			selection = points.get(dex);
-			connect(selection, rrt.edges);
-			// nearest = findNearest(selection, rrt.vertices);
-			// rrt.edges.add(new Edge(nearest,selection));
-			rrt.vertices.add(selection);
-			points.remove(dex);
-			SwingUtilities.invokeLater(new Runnable() {
-				@Override
-				public void run() {
-					Application.drawer.repaint();
-					Application.drawer.setVisible(true);
-				}
-			});
+
+			// Send the proposal
+
 			try {
-				Thread.sleep(50);
+
+				SampleSendableEvent event = new SampleSendableEvent();
+				event.setCommand("propose");
+				Message message = event.getMessage();
+				message.pushString(Integer.toString(dex));
+				event.asyncGo(SampleApplSession.rbChannel, Direction.DOWN);
+			} catch (AppiaEventException e1) {
+				e1.printStackTrace();
+			}
+
+			try {
+				this.wait();
+			} catch (InterruptedException e) {}
+			
+			System.out.println("[RRT] Got decision " + decision);
+			
+			selection = points.get(decision);
+			connect(selection, tree.edges);
+
+			tree.vertices.add(selection);
+			points.remove(decision);
+
+			try {
+				Thread.sleep(10);
 			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+
 		}
+
+		finished();
+	}
+
+	private void finished() {
+		System.out.println("Finished");
+		tree.printTree();
 	}
 
 	public Point findNearest(Point t, List<Point> points) {
@@ -116,7 +146,6 @@ public class RRTGenerator {
 
 	public void connect(Point s, List<Edge> edges) {
 		Point nearest = null;
-		boolean inside = false;
 		/*
 		 * distance( Point P, Segment P0:P1 ) { v = P1 - P0 w = P - P0
 		 * 

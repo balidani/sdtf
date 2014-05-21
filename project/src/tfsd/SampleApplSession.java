@@ -46,6 +46,7 @@ import net.sf.appia.core.message.Message;
 import net.sf.appia.protocols.common.RegisterSocketEvent;
 import tfsd.lrb.ProcessSet;
 import tfsd.pfd.PFDStartEvent;
+import app.RRTHandler;
 
 /**
  * Session implementing the sample application.
@@ -58,7 +59,7 @@ public class SampleApplSession extends Session {
 	public static Channel rbChannel;
 	
 	private ProcessSet processes;
-	private SampleApplReader reader;
+	private RRTHandler rrtHandler;
 
 	public static SampleApplSession instance;
 	
@@ -133,9 +134,10 @@ public class SampleApplSession extends Session {
 			System.out.println("RB channel is open.");
 			rbChannel = channel;
 
-			// starts the thread that reads from the keyboard.
-			reader = new SampleApplReader();
-			reader.start();
+			// starts the thread that generates the tree
+			
+			rrtHandler = new RRTHandler();
+			rrtHandler.start();
 		}
 	}
 
@@ -229,6 +231,8 @@ public class SampleApplSession extends Session {
 	
 	public void decide(int v) {
 		System.out.printf("[App] *** Decided on value %d ***\n", v);
+		
+		rrtHandler.notifyDecision(v);
 	}
 
 	private void printHelp() {

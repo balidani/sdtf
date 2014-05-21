@@ -41,6 +41,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.StringTokenizer;
 
+import javax.swing.SwingUtilities;
+
 import net.sf.appia.core.Appia;
 import net.sf.appia.core.AppiaCursorException;
 import net.sf.appia.core.AppiaDuplicatedSessionsException;
@@ -52,10 +54,11 @@ import net.sf.appia.core.QoS;
 import net.sf.appia.protocols.tcpcomplete.TcpCompleteLayer;
 import tfsd.beb.BasicBroadcastLayer;
 import tfsd.consensus.ConsensusLayer;
-import tfsd.consensus.ReliableConsensusLayer;
 import tfsd.lrb.LazyRBLayer;
 import tfsd.lrb.ProcessSet;
 import tfsd.pfd.TcpBasedPFDLayer;
+import app.Drawer;
+import app.RRTGenerator;
 
 /**
  * This class is the MAIN class to run the Reliable Broadcast protocols.
@@ -173,7 +176,7 @@ public class SampleAppl {
 	public static int TOLERATED_FAILURES = 0;
 
 	public static void main(String[] args) {
-
+		
 		int arg = 0, self = -1;
 		try {
 			while (arg < args.length) {
@@ -204,7 +207,7 @@ public class SampleAppl {
 			e.printStackTrace();
 			invalidArgs(e.getMessage());
 		}
-
+		
 		/*
 		 * gets a new uninitialized Channel with the specified QoS and the Appl
 		 * session created. Remaining sessions are created by default. Just tell
