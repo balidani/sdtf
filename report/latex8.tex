@@ -51,19 +51,17 @@ Instituto Superior T\'{e}cnico\\
 
 Two channels are required according to the Randomized Consensus algorithm. 
 For the first phase of the protocol, it is sufficient to use 
-\textit{Best-Effort Broadcast}. For the final part of the second phase, 
-\textit{Reliable Broadcast} is required. For this reason we used two 
-separate stacks, which can be seen on figure \ref{fig:stack}.
+\textit{Best-effort Broadcast}. For the final part of the second phase, 
+\textit{Reliable Broadcast} is required. We ended up using the same stack, 
+but only special messages (decision) are passing through the full reliable 
+broadcast stack. This can be seen on figure \ref{fig:stack}.
 
 For the reliable channel, we had to use Lazy Reliable Broadcast on top
-of a TCP-based Perfect Failure Detector. The best-effort channel is much simpler, 
+of a TCP-based Perfect Failure Detector. The best-effor channel is much simpler, 
 only requiring a basic broadcast layer.
 
 The implementation of the randomized consensus algorithm is in the 
-\textit{tfsd.consensus} package. \textit{ConsensusLayer} is the layer for the 
-session that uses the best-effort channel. \textit{ReliableConsensusLayer} is for 
-the reliable channel. ConsensusLayer requires ChannelInit and ProcessInitEvent. 
-Above these, it accepts ProposeEvent and SendableEvent.
+\textit{tfsd.consensus} package. 
 
 %------------------------------------------------------------------------- 
 \Section{Code}
@@ -143,4 +141,6 @@ The current implementation of the consensus, with the demo application reaches c
 
 \bibliographystyle{latex8}
 \bibliography{latex8}
+
+ 
 \end{document}
