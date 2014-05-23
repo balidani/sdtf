@@ -64,7 +64,7 @@ public class LazyRBSession extends Session {
 	// List of MessageID objects
 	private List<MessageID> delivered;
     public static boolean buffer = false;
-    private canBuffer = false;
+    private boolean canBuffer = false;
     private ArrayList<SendableEvent> timedBuffer = new ArrayList<SendableEvent>();
 
 	/**
