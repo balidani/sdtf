@@ -91,7 +91,7 @@ public class LazyRBSession extends Session {
 		} else if (event instanceof TokenTimer){
             canBuffer = false;
             releaseEvents();
-            System.out.println("Releasing the buffered events.");
+            System.err.println("[LRB] Releasing the buffered events.");
         }
         else if (event instanceof DecideEvent) {
 			if (event.getDir() == Direction.DOWN) {

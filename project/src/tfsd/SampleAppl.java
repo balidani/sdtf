@@ -184,7 +184,7 @@ public class SampleAppl {
 					arg++;
 					try {
 						self = Integer.parseInt(args[arg]);
-						System.out.println("Process number: " + self);
+						System.err.println("Process number: " + self);
 					} catch (NumberFormatException e) {
 						invalidArgs(e.getMessage());
 					}
@@ -193,7 +193,7 @@ public class SampleAppl {
 					try {
 						SampleAppl.TOLERATED_FAILURES = Integer
 								.parseInt(args[arg]);
-						System.out.println("Failures tolerated: "
+						System.err.println("Failures tolerated: "
 								+ SampleAppl.TOLERATED_FAILURES);
 					} catch (NumberFormatException e) {
 						invalidArgs(e.getMessage());
@@ -239,7 +239,7 @@ public class SampleAppl {
 		}
 
 		/* All set. Appia main class will handle the rest */
-		System.out.println("Starting Appia...");
+		System.err.println("Starting Appia...");
 		Appia.run();
 	}
 
@@ -250,12 +250,11 @@ public class SampleAppl {
 	 *            the reason of the failure
 	 */
 	private static void invalidArgs(String reason) {
-		System.out
-				.println("Invalid args: "
-						+ reason
-						+ "\nUsage SampleAppl -f filemane -n proc_number -qos QoS_type."
-						+ "\n QoS can be one of the following:"
-						+ "\n\t beb - Best Effort Broadcast");
+		System.err.println("Invalid args: "
+			+ reason
+			+ "\nUsage SampleAppl -f filemane -n proc_number -qos QoS_type."
+			+ "\n QoS can be one of the following:"
+			+ "\n\t beb - Best Effort Broadcast");
 		System.exit(1);
 	}
 }

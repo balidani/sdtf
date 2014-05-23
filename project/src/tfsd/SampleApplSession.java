@@ -74,7 +74,7 @@ public class SampleApplSession extends Session {
 	}
 
 	public void handle(Event event) {
-		System.out.println("Received event: " + event.getClass().getName());
+		System.err.println("Received event: " + event.getClass().getName());
 		if (event instanceof SampleSendableEvent)
 			handleSampleSendableEvent((SampleSendableEvent) event);
 		else if (event instanceof ChannelInit)
@@ -90,7 +90,7 @@ public class SampleApplSession extends Session {
 	 */
 	private void handleRegisterSocket(RegisterSocketEvent event) {
 		if (event.error) {
-			System.out.println("Address already in use!");
+			System.err.println("Address already in use!");
 			System.exit(2);
 		}
 	}
@@ -131,7 +131,7 @@ public class SampleApplSession extends Session {
 			
 		if (channelID.equals("rbChannel")) {
 
-			System.out.println("RB channel is open.");
+			System.err.println("RB channel is open.");
 			rbChannel = channel;
 
 			// starts the thread that generates the tree
@@ -147,7 +147,7 @@ public class SampleApplSession extends Session {
 	private void handleChannelClose(ChannelClose close) {
 		
 		rbChannel = null;
-		System.out.println("RB Channel is closed");
+		System.err.println("RB Channel is closed");
 	}
 
 	/**
@@ -165,7 +165,7 @@ public class SampleApplSession extends Session {
 	 */
 	private void handleIncomingEvent(SampleSendableEvent event) {
 		String message = event.getMessage().popString();
-		System.out.print("Received event with message: " + message + "\n>");
+		System.err.print("Received event with message: " + message + "\n>");
 	}
 
 	/**
@@ -181,7 +181,7 @@ public class SampleApplSession extends Session {
 		} else if ("help".equals(command)) {
 			printHelp();
 		} else {
-			System.out.println("Invalid command: " + command);
+			System.err.println("Invalid command: " + command);
 			printHelp();
 		}
 	}
@@ -209,7 +209,7 @@ public class SampleApplSession extends Session {
 	
 	public void broadcastDecide(int v) {
 		
-		System.out.println("[App] Reliably broadcasting decision value " + v);
+		System.err.println("[App] Reliably broadcasting decision value " + v);
 		
         try {
     		
@@ -235,11 +235,10 @@ public class SampleApplSession extends Session {
 	}
 
 	private void printHelp() {
-		System.out
-				.println("Available commands:\n"
-						+ "propose <value> - Proposes a value for consensus\n"
-						+ "startpfd - starts the Perfect Failure detector (when it applies)\n"
-						+ "help - Print this help information.");
+		System.err.println("Available commands:\n"
+			+ "propose <value> - Proposes a value for consensus\n"
+			+ "startpfd - starts the Perfect Failure detector (when it applies)\n"
+			+ "help - Print this help information.");
 	}
 
 }

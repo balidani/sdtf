@@ -122,14 +122,14 @@ public class ConsensusSession extends Session {
 			throws AppiaEventException {
 
 		String proposed = event.getMessage().popString().trim();
-		System.out.println("RC: Received proposed value: " + proposed);
+		System.err.println("RC: Received proposed value: " + proposed);
 
 		// Convert to integer
 		int proposedInteger = 0;
 		try {
 			proposedInteger = Integer.parseInt(proposed);
 		} catch (NumberFormatException ex) {
-			System.out.println("RC: Error parsing proposed value");
+			System.err.println("RC: Error parsing proposed value");
 		}
 
 		startedTimestamp++;
@@ -165,7 +165,7 @@ public class ConsensusSession extends Session {
 	
 	private synchronized void decide(DecideEvent event) {
 		
-		System.out.printf("*** DECIDING %d *** %d, %d, %d\n", event.getValue(),
+		System.err.printf("*** DECIDING %d *** %d, %d, %d\n", event.getValue(),
 				event.getTimestamp(), startedTimestamp, decidedTimestamp);
 
 		decidedTimestamp++;
@@ -193,7 +193,7 @@ public class ConsensusSession extends Session {
 
 		// Ignore events with a lower timestamp than the current one
 		if (event.getTimestamp() <= decidedTimestamp) {
-			// System.out.printf("RC: Timestamp %d was already decided, aborting (%d)\n",
+			// System.err.printf("RC: Timestamp %d was already decided, aborting (%d)\n",
 			// event.getTimestamp(), event.getPhase());
 			return;
 		}
@@ -211,7 +211,7 @@ public class ConsensusSession extends Session {
 	private synchronized void handleProposePhase1(ProposeEvent event)
 			throws AppiaEventException {
 
-		System.out.printf("RC: (PHASE 1) Received incoming ProposeEvent: %d @%d, from %d\n",
+		System.err.printf("RC: (PHASE 1) Received incoming ProposeEvent: %d @%d, from %d\n",
 			event.getValue(), event.getTimestamp(), event.getProcess());
 		
 		// First we must wait for a quorum
@@ -236,17 +236,17 @@ public class ConsensusSession extends Session {
 			int broadcastedValue;
 
 			if (identicalValues) {
-				System.out
+				System.err
 						.printf("RC: (PHASE 1) A quorum was found with identical values (%d)\n",
 								firstValue);
 				broadcastedValue = firstValue;
 			} else {
-				System.out
+				System.err
 						.printf("RC: (PHASE 1) A quorum was found with different values: [");
 				for (ProposeEvent proposed : quorum.values()) {
-					System.out.printf("%d, ", proposed.getValue());
+					System.err.printf("%d, ", proposed.getValue());
 				}
-				System.out.println("]");
+				System.err.println("]");
 
 				// TODO: add a flag instead
 				broadcastedValue = -1;
@@ -261,7 +261,7 @@ public class ConsensusSession extends Session {
 	private synchronized void handleProposePhase2(ProposeEvent event)
 			throws AppiaEventException {
 
-		System.out.printf("RC: (PHASE 2) Received incoming ProposeEvent: %d @%d, from %d\n",
+		System.err.printf("RC: (PHASE 2) Received incoming ProposeEvent: %d @%d, from %d\n",
 				event.getValue(), event.getTimestamp(), event.getProcess());
 		
 		// First we must wait for a quorum
@@ -271,11 +271,11 @@ public class ConsensusSession extends Session {
 		if (quorum.size() == processes.getSize()
 				- SampleAppl.TOLERATED_FAILURES) {
 
-			System.out.print("RC: Got a quorum for phase 2 [");
+			System.err.print("RC: Got a quorum for phase 2 [");
 			for (ProposeEvent proposed : quorum.values()) {
-				System.out.print(proposed.getValue() + ", ");
+				System.err.print(proposed.getValue() + ", ");
 			}
-			System.out.println("]");
+			System.err.println("]");
 
 			// Try to find f+1 values of v*
 			int count = 0;
@@ -292,7 +292,7 @@ public class ConsensusSession extends Session {
 				// Found f+1 processes proposing v*, _reliable_ broadcast
 				// and decide
 
-				System.out.println("RC: (PHASE 2) starting decide with " + vStar);
+				System.err.println("RC: (PHASE 2) starting decide with " + vStar);
 				
 				clearQuorums();
 				
@@ -303,7 +303,7 @@ public class ConsensusSession extends Session {
 			} else if (count > 0) {
 				// Start new round with v*
 
-				System.out.println("RC: (PHASE 2) starting phase 1 with (star) " + vStar);
+				System.err.println("RC: (PHASE 2) starting phase 1 with (star) " + vStar);
 				
 				clearQuorums();
 				
@@ -330,7 +330,7 @@ public class ConsensusSession extends Session {
 					}
 				}
 
-				System.out.println("RC: (PHASE 2) starting phase 1 with (random) " + randomValue);
+				System.err.println("RC: (PHASE 2) starting phase 1 with (random) " + randomValue);
 
 				clearQuorums();
 				

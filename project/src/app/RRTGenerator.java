@@ -62,9 +62,9 @@ public class RRTGenerator {
 	}
 
 	public void printPoints() {
-		System.out.println("width : " + width + " , height : " + height);
+		System.err.println("width : " + width + " , height : " + height);
 		for (Point t : points) {
-			System.out.println(t.toString());
+			System.err.println(t.toString());
 		}
 
 	}
@@ -109,7 +109,7 @@ public class RRTGenerator {
 				this.wait();
 			} catch (InterruptedException e) {}
 			
-			System.out.println("[RRT] Got decision " + decision);
+			System.err.println("[RRT] Got decision " + decision);
 			decisions.add(decision);
 			
 			selection = points.get(decision);
@@ -122,7 +122,7 @@ public class RRTGenerator {
 	            @Override
 	            public void run() {
 	            	RRTHandler.drawer.repaint();
-	                RRTHandler.drawer.setVisible(true);
+	                // RRTHandler.drawer.setVisible(true);
 	            }
 	        });
 
@@ -138,7 +138,7 @@ public class RRTGenerator {
 	}
 
 	private void finished() {
-		System.out.println("Finished");
+		System.err.println("Finished");
 		// tree.printTree();
 		for (int i : decisions) {
 			System.out.print(i + " ");

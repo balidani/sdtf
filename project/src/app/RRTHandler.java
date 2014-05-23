@@ -57,7 +57,7 @@ public class RRTHandler extends Thread {
 
 	public void run() {
 		
-		System.out.println("Starting RRT Handler, press enter to continue...");
+		System.err.println("Starting RRT Handler, press enter to continue...");
 		try {
 			keyb.readLine();
 		} catch (IOException e) {
