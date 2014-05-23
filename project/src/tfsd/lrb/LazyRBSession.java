@@ -63,7 +63,8 @@ public class LazyRBSession extends Session {
 	private LinkedList<SendableEvent>[] from;
 	// List of MessageID objects
 	private List<MessageID> delivered;
-    public static boolean canBuffer = false;
+    public static boolean buffer = false;
+    private canBuffer = false;
     private ArrayList<SendableEvent> timedBuffer = new ArrayList<SendableEvent>();
 
 	/**
@@ -99,7 +100,7 @@ public class LazyRBSession extends Session {
 			} else {
 				// UPON event from the bottom protocol (or perfect point2point
 				// links)
-                insertTimerEvent((DecideEvent) event);
+                if(buffer==true) insertTimerEvent((DecideEvent) event);
 				bebDeliver((DecideEvent) event);
 			}
 
