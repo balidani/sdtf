@@ -32,15 +32,20 @@
 
 package app;
 
+
 import java.io.IOException;
+
+import javax.swing.SwingUtilities;
 
 /**
  * Class that reads from the keyboard and generates events to the appia Channel.
  * 
  * @author nuno
  */
-public class RRTHandler extends Thread {
 
+public class RRTHandler extends Thread {
+	public static Drawer drawer;
+	public static Tree tree;
 	private java.io.BufferedReader keyb;
 	private RRTGenerator generator;
 	
@@ -61,6 +66,15 @@ public class RRTHandler extends Thread {
 		}
 		
 		generator = new RRTGenerator("points.txt");
+		tree = generator.tree;
+		SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+
+                drawer = new Drawer(tree);
+                drawer.setVisible(true);
+            }
+        });
 		generator.generate();
 	}
 	
