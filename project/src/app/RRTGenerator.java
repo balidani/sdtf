@@ -1,5 +1,7 @@
 package app;
 
+
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -7,6 +9,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import javax.swing.SwingUtilities;
 
 import net.sf.appia.core.AppiaEventException;
 import net.sf.appia.core.Direction;
@@ -112,6 +116,14 @@ public class RRTGenerator {
 
 			tree.vertices.add(selection);
 			points.remove(decision);
+			
+			SwingUtilities.invokeLater(new Runnable() {
+	            @Override
+	            public void run() {
+	            	RRTHandler.drawer.repaint();
+	                RRTHandler.drawer.setVisible(true);
+	            }
+	        });
 
 			try {
 				Thread.sleep(10);
