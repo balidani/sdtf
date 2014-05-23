@@ -38,6 +38,7 @@ import net.sf.appia.core.events.SendableEvent;
 import net.sf.appia.core.events.channel.ChannelClose;
 import net.sf.appia.core.events.channel.ChannelInit;
 import tfsd.ProcessInitEvent;
+import tfsd.TokenTimer;
 
 /**
  * Layer of the Lazy Reliable Broadcast protocol.
@@ -48,7 +49,8 @@ public class LazyRBLayer extends Layer {
 
   public LazyRBLayer() {
     /* events that the protocol will create */
-    evProvide = new Class[0];
+    evProvide = new Class[1];
+      evProvide[0] = TokenTimer.class;
 
     /*
      * events that the protocol require to work. This is a subset of the
@@ -61,13 +63,13 @@ public class LazyRBLayer extends Layer {
     evRequire[3] = Crash.class;
 
     /* events that the protocol will accept */
-    evAccept = new Class[5];
+    evAccept = new Class[6];
     evAccept[0] = SendableEvent.class;
     evAccept[1] = ChannelInit.class;
     evAccept[2] = ChannelClose.class;
     evAccept[3] = ProcessInitEvent.class;
-    evAccept[4] = Crash.class;
-
+      evAccept[4] = Crash.class;
+      evAccept[5] = TokenTimer.class;
   }
 
   /**

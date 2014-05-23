@@ -33,19 +33,19 @@
 package tfsd.lrb;
 
 import java.net.SocketAddress;
+import java.security.cert.TrustAnchor;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import net.sf.appia.core.AppiaEventException;
-import net.sf.appia.core.Direction;
-import net.sf.appia.core.Event;
-import net.sf.appia.core.Layer;
-import net.sf.appia.core.Session;
+import app.Tree;
+import net.sf.appia.core.*;
 import net.sf.appia.core.events.SendableEvent;
 import net.sf.appia.core.events.channel.ChannelInit;
+import net.sf.appia.core.events.channel.Timer;
 import tfsd.ProcessInitEvent;
 import tfsd.SampleProcess;
+import tfsd.TokenTimer;
 import tfsd.consensus.DecideEvent;
 import tfsd.consensus.ProposeEvent;
 
@@ -63,6 +63,8 @@ public class LazyRBSession extends Session {
 	private LinkedList<SendableEvent>[] from;
 	// List of MessageID objects
 	private List<MessageID> delivered;
+    private boolean canBuffer = false;
+    private ArrayList<SendableEvent> timedBuffer = new ArrayList<SendableEvent>();
 
 	/**
 	 * @param layer
@@ -85,13 +87,19 @@ public class LazyRBSession extends Session {
 		} else if (event instanceof ProcessInitEvent) {
 			handleProcessInitEvent((ProcessInitEvent) event);
 
-		} else if (event instanceof DecideEvent) {
+		} else if (event instanceof TokenTimer){
+            canBuffer = false;
+            releaseEvents();
+            System.out.println("Releasing the buffered events.");
+        }
+        else if (event instanceof DecideEvent) {
 			if (event.getDir() == Direction.DOWN) {
 				// UPON event from the above protocol (or application)
 				rbBroadcast((DecideEvent) event);
 			} else {
 				// UPON event from the bottom protocol (or perfect point2point
 				// links)
+                insertTimerEvent((DecideEvent) event);
 				bebDeliver((DecideEvent) event);
 			}
 
@@ -129,6 +137,15 @@ public class LazyRBSession extends Session {
 		}
 	}
 
+    private void releaseEvents(){
+        if(!timedBuffer.isEmpty()){
+            for(int i = 0; i < timedBuffer.size(); i++){
+                bebDeliver(timedBuffer.get(i));
+            }
+            timedBuffer.clear();
+        }
+    }
+
 	/**
 	 * @param event
 	 */
@@ -162,6 +179,17 @@ public class LazyRBSession extends Session {
 		bebBroadcast(event);
 	}
 
+
+    private void insertTimerEvent(SendableEvent event) {
+        try {
+            canBuffer = true;
+            new TokenTimer(1000, event.getChannel(), Direction.DOWN, this, EventQualifier.ON).go();
+        } catch (Exception e){
+            e.printStackTrace();
+    }
+
+    }
+
 	/**
 	 * Called when the lower protocol delivers a message.
 	 * 
@@ -170,7 +198,11 @@ public class LazyRBSession extends Session {
 	private void bebDeliver(SendableEvent event) {
 		// System.out.println("RB: Received message from beb.");
 		MessageID msgID = (MessageID) event.getMessage().peekObject();
-		if (!delivered.contains(msgID)) {
+        if(canBuffer) {
+            timedBuffer.add(event);
+            System.out.println("Buffering events!");
+        }
+        else if (!delivered.contains(msgID)) {
 			// System.out.println("RB: message is new.");
 			delivered.add(msgID);
 			// removes the header from the message (sender and seqNumber) and
