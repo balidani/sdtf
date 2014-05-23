@@ -44,6 +44,9 @@ import net.sf.appia.core.events.SendableEvent;
  */
 public class DecideEvent extends SendableEvent {
 	
+	private int timestamp;
+	private int value;
+	
 	/**
 	 * Default constructor.
 	 */
@@ -54,5 +57,21 @@ public class DecideEvent extends SendableEvent {
 	public DecideEvent(Channel c, int dir, Session s)
 			throws AppiaEventException {
 		super(c, dir, s);
+	}
+
+	public int getTimestamp() {
+		return timestamp;
+	}
+
+	public void setTimestamp(int timestamp) {
+		this.timestamp = timestamp;
+	}
+
+	public int getValue() {
+		return value;
+	}
+
+	public void setValue(int value) {
+		this.value = value;
 	}
 }

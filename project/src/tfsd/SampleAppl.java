@@ -173,7 +173,7 @@ public class SampleAppl {
 		return channel;
 	}
 
-	public static int TOLERATED_FAILURES = 0;
+	public static int TOLERATED_FAILURES = 1;
 
 	public static void main(String[] args) {
 		
