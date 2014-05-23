@@ -61,7 +61,11 @@ public class ConsensusSession extends Session {
 
 	private ProcessSet processes;
 
+	// Storing the unprocessed proposals
 	List<ProposeEvent> proposalQueue;
+	
+	// Storing the received decide events for future startedTimestamp values
+	Map<Integer, DecideEvent> decisionQueue;
 
 	private int startedTimestamp;
 	private int decidedTimestamp;
@@ -76,6 +80,7 @@ public class ConsensusSession extends Session {
 		super(layer);
 
 		proposalQueue = new ArrayList<ProposeEvent>();
+		decisionQueue = new HashMap<Integer, DecideEvent>();
 
 		startedTimestamp = 0;
 		decidedTimestamp = 0;
@@ -130,8 +135,13 @@ public class ConsensusSession extends Session {
 		startedTimestamp++;
 		phaseTimestamp = 0;
 
-		sendProposal(event.getSourceSession(), event.getChannel(), PHASE_1,
+		// If we already know this instance is decided, act accordingly
+		if (decisionQueue.containsKey(startedTimestamp)) {
+			decide(decisionQueue.get(startedTimestamp));
+		} else {
+			sendProposal(event.getSourceSession(), event.getChannel(), PHASE_1,
 				proposedInteger, event.getDir());
+		}
 
 	}
 
@@ -141,15 +151,25 @@ public class ConsensusSession extends Session {
 
 			int timestamp = event.getMessage().popInt();
 			int value = event.getMessage().popInt();
-
+			
+			event.setTimestamp(timestamp);
+			event.setValue(value);
+			
 			if (timestamp == startedTimestamp && timestamp > decidedTimestamp) {
-				System.out.printf("*** DECIDING %d *** %d, %d, %d\n", value,
-						timestamp, startedTimestamp, decidedTimestamp);
-
-				decidedTimestamp++;
-				SampleApplSession.instance.decide(value);
+				decide(event);
+			} else {
+				decisionQueue.put(timestamp, event);
 			}
 		}
+	}
+	
+	private synchronized void decide(DecideEvent event) {
+		
+		System.out.printf("*** DECIDING %d *** %d, %d, %d\n", event.getValue(),
+				event.getTimestamp(), startedTimestamp, decidedTimestamp);
+
+		decidedTimestamp++;
+		SampleApplSession.instance.decide(event.getValue());
 	}
 
 	private synchronized void handlePropose(ProposeEvent event)
