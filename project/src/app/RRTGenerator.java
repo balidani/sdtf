@@ -75,20 +75,21 @@ public class RRTGenerator {
 
 
 	public synchronized void generate() {
+		// Take a point
+		Point selection = new Point(width / 2, height / 2);
+		Point nearest = findNearest(selection, points);
+
+		tree.vertices.add(nearest);
+		tree.edges.add(new Edge(nearest, nearest));
+
+		points.remove(nearest);
+
+		// Generate a random number for proposal
+		Random rand = new Random();
 
 		while (points.size() > 0) {
 
-			// Take a point
-			Point selection = new Point(width / 2, height / 2);
-			Point nearest = findNearest(selection, points);
-
-			tree.vertices.add(nearest);
-			tree.edges.add(new Edge(nearest, nearest));
-
-			points.remove(nearest);
-
-			// Generate a random number for proposal
-			Random rand = new Random();
+			
 			int dex = rand.nextInt(points.size());
 
 			// Send the proposal
