@@ -118,18 +118,19 @@ public class RRTGenerator {
 			tree.vertices.add(selection);
 			points.remove(decision);
 			
-//			SwingUtilities.invokeLater(new Runnable() {
-//	            @Override
-//	            public void run() {
-//	            	RRTHandler.drawer.repaint();
-//	            }
-//	        });
-//
-//			try {
-//				Thread.sleep(32);
-//			} catch (InterruptedException e) {
-//				e.printStackTrace();
-//			}
+			SwingUtilities.invokeLater(new Runnable() {
+	            @Override
+	            public void run() {
+	            	RRTHandler.drawer.repaint();
+	            }
+	        });
+
+			// Delay added for ui reasons
+			try {
+				Thread.sleep(20);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 
 		}
 
