@@ -70,6 +70,7 @@ public class ConsensusSession extends Session {
 	private int startedTimestamp;
 	private int decidedTimestamp;
 	private int phaseTimestamp;
+	private int currentPhase;
 
 	/**
 	 * Builds a new ConsensusSession.
@@ -85,6 +86,7 @@ public class ConsensusSession extends Session {
 		startedTimestamp = 0;
 		decidedTimestamp = 0;
 		phaseTimestamp = 0;
+		currentPhase = PHASE_1;
 	}
 
 	/**
@@ -118,7 +120,7 @@ public class ConsensusSession extends Session {
 		event.go();
 	}
 
-	private synchronized void handleSendable(SendableEvent event)
+	private void handleSendable(SendableEvent event)
 			throws AppiaEventException {
 
 		String proposed = event.getMessage().popString().trim();
@@ -134,6 +136,7 @@ public class ConsensusSession extends Session {
 
 		startedTimestamp++;
 		phaseTimestamp = 0;
+		currentPhase = PHASE_1;
 
 		// If we already know this instance is decided, act accordingly
 		if (decisionQueue.containsKey(startedTimestamp)) {
@@ -145,7 +148,7 @@ public class ConsensusSession extends Session {
 
 	}
 
-	private synchronized void handleDecide(DecideEvent event) {
+	private void handleDecide(DecideEvent event) {
 
 		if (event.getDir() == Direction.UP) {
 
@@ -163,16 +166,16 @@ public class ConsensusSession extends Session {
 		}
 	}
 	
-	private synchronized void decide(DecideEvent event) {
+	private void decide(DecideEvent event) {
 		
 		System.err.printf("*** DECIDING %d *** %d, %d, %d\n", event.getValue(),
 				event.getTimestamp(), startedTimestamp, decidedTimestamp);
 
+		SampleApplSession.instance.decide(decidedTimestamp, event.getValue());
 		decidedTimestamp++;
-		SampleApplSession.instance.decide(event.getValue());
 	}
 
-	private synchronized void handlePropose(ProposeEvent event)
+	private void handlePropose(ProposeEvent event)
 			throws AppiaEventException {
 
 		// When we receive the proposal, we must broadcast it
@@ -197,6 +200,13 @@ public class ConsensusSession extends Session {
 			// event.getTimestamp(), event.getPhase());
 			return;
 		}
+		
+		// Ignore events of the previous phase
+		if (event.getTimestamp() == startedTimestamp 
+				&& event.getPhaseTimestamp() == phaseTimestamp
+					&& event.getPhase() == PHASE_1 && currentPhase == PHASE_2) {
+			return;
+		}
 
 		proposalQueue.add(event);
 
@@ -208,7 +218,7 @@ public class ConsensusSession extends Session {
 		}
 	}
 
-	private synchronized void handleProposePhase1(ProposeEvent event)
+	private void handleProposePhase1(ProposeEvent event)
 			throws AppiaEventException {
 
 		System.err.printf("RC: (PHASE 1) Received incoming ProposeEvent: %d @%d, from %d\n",
@@ -252,13 +262,15 @@ public class ConsensusSession extends Session {
 				broadcastedValue = -1;
 			}
 			
+			currentPhase = PHASE_2;
+			
 			// Send the broadcast for phase 2
 			sendProposal(this, event.getChannel(), PHASE_2, broadcastedValue,
 					Direction.DOWN);
 		}
 	}
 
-	private synchronized void handleProposePhase2(ProposeEvent event)
+	private void handleProposePhase2(ProposeEvent event)
 			throws AppiaEventException {
 
 		System.err.printf("RC: (PHASE 2) Received incoming ProposeEvent: %d @%d, from %d\n",
@@ -297,6 +309,8 @@ public class ConsensusSession extends Session {
 				clearQuorums();
 				
 				phaseTimestamp++;
+				currentPhase = PHASE_1;
+				
 				sendDecision(this, event.getChannel(), PHASE_DECIDE, vStar,
 						Direction.DOWN);
 
@@ -308,6 +322,8 @@ public class ConsensusSession extends Session {
 				clearQuorums();
 				
 				phaseTimestamp++;
+				currentPhase = PHASE_1;
+				
 				sendProposal(this, event.getChannel(), PHASE_1, vStar,
 						Direction.DOWN);
 
@@ -335,6 +351,8 @@ public class ConsensusSession extends Session {
 				clearQuorums();
 				
 				phaseTimestamp++;
+				currentPhase = PHASE_1;
+				
 				sendProposal(this, event.getChannel(), PHASE_1, randomValue,
 						Direction.DOWN);
 			}
@@ -345,7 +363,7 @@ public class ConsensusSession extends Session {
 	 * Utils
 	 */
 
-	private synchronized Map<Integer, ProposeEvent> getQuorum(int phase) {
+	private Map<Integer, ProposeEvent> getQuorum(int phase) {
 		Map<Integer, ProposeEvent> quorum = new HashMap<Integer, ProposeEvent>();
 		
 		for (ProposeEvent oldProposal : proposalQueue) {
@@ -368,19 +386,19 @@ public class ConsensusSession extends Session {
 		return quorum;
 	}
 
-	private synchronized void clearQuorums() {
+	private void clearQuorums() {
 		clearQuorum(getQuorum(PHASE_1));
 		clearQuorum(getQuorum(PHASE_2));
 	}
 	
-	private synchronized void clearQuorum(Map<Integer, ProposeEvent> quorum) {
+	private void clearQuorum(Map<Integer, ProposeEvent> quorum) {
 		// Remove members of the quorum
 		for (ProposeEvent quorumMember : quorum.values()) {
 			proposalQueue.remove(quorumMember);
 		}
 	}
 
-	private synchronized void sendProposal(Session source, Channel channel,
+	private void sendProposal(Session source, Channel channel,
 			int phase, int value, int dir) throws AppiaEventException {
 
 		ProposeEvent proposal = new ProposeEvent();
@@ -398,7 +416,7 @@ public class ConsensusSession extends Session {
 		proposal.go();
 	}
 
-	private synchronized void sendDecision(Session session, Channel channel,
+	private void sendDecision(Session session, Channel channel,
 			int phase, int vStar, int down) throws AppiaEventException {
 
 		DecideEvent decision = new DecideEvent();

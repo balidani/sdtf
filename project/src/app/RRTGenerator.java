@@ -118,19 +118,18 @@ public class RRTGenerator {
 			tree.vertices.add(selection);
 			points.remove(decision);
 			
-			SwingUtilities.invokeLater(new Runnable() {
-	            @Override
-	            public void run() {
-	            	RRTHandler.drawer.repaint();
-	                // RRTHandler.drawer.setVisible(true);
-	            }
-	        });
-
-			try {
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+//			SwingUtilities.invokeLater(new Runnable() {
+//	            @Override
+//	            public void run() {
+//	            	RRTHandler.drawer.repaint();
+//	            }
+//	        });
+//
+//			try {
+//				Thread.sleep(32);
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
 
 		}
 
@@ -139,10 +138,10 @@ public class RRTGenerator {
 
 	private void finished() {
 		System.err.println("Finished");
-		// tree.printTree();
-		for (int i : decisions) {
-			System.out.print(i + " ");
-		}
+//		tree.printTree();
+//		for (int i : decisions) {
+//			System.out.print(i + " ");
+//		}
 		System.out.println();
 	}
 

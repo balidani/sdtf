@@ -207,30 +207,9 @@ public class SampleApplSession extends Session {
 		}
 	}
 	
-	public void broadcastDecide(int v) {
+	public void decide(int ts, int v) {
 		
-		System.err.println("[App] Reliably broadcasting decision value " + v);
-		
-        try {
-    		
-        	SampleSendableEvent event = new SampleSendableEvent();
-            Message message = event.getMessage();        
-            message.pushInt(v);
-            
-        	event.setChannel(SampleApplSession.rbChannel);
-        	event.setDir(Direction.DOWN);
-        	event.setSourceSession(this);
-        	event.init();
-        	event.go();
-        	
-		} catch (AppiaEventException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
-	public void decide(int v) {
-		
+		System.out.printf("(%d, %d) ", ts, v);
 		rrtHandler.notifyDecision(v);
 	}
 

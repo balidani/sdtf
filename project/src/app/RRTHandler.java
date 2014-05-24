@@ -67,14 +67,16 @@ public class RRTHandler extends Thread {
 		
 		generator = new RRTGenerator("points.txt");
 		tree = generator.tree;
-		SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-
-                drawer = new Drawer(tree);
-                drawer.setVisible(true);
-            }
-        });
+		
+//		SwingUtilities.invokeLater(new Runnable() {
+//            @Override
+//            public void run() {
+//
+//                drawer = new Drawer(tree);
+//                drawer.setVisible(true);
+//            }
+//        });
+		
 		generator.generate();
 	}
 	
